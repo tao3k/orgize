@@ -1,7 +1,8 @@
 ;;; -*- Gerbil -*-
 ;;; The existing native-build owner stages the compiler's program closure.
 (import (only-in :gerbil-scheme-rust/scheme/program-build gerbil-rs-stage-program)
-        (only-in :std/make pkg-config))
+        (only-in :std/make pkg-config)
+        (only-in :gerbil-parser/compiler-build-support run-build-tool))
 (export main)
 
 (def (crypto-static-link-options)
@@ -21,7 +22,26 @@
                                       (string-split options #\space))))
     " "))
 
-(def (main output-dir)
+(def (validate-compiled-tape-interface! output)
+  (def interface (path-expand "lib/orgize/bindings/c/event-tape.ssi" output))
+  (unless (file-exists? interface)
+    (error "compiled event-tape interface is missing" interface))
+  (run-build-tool
+    (list "env" "DYLD_PRINT_APIS=1" "gxi" "-:max-heap=1G,debug=q" "-e"
+      (object->string
+        `(begin
+           (import (only-in :gerbil-scheme-rust/scheme/runtime gerbil-rs-observe-module-work))
+           (gerbil-rs-observe-module-work (lambda () (eval '(import ,interface)))
+                                        (current-error-port))
+           (displayln "COMPILED-INTERFACE-ABI-OK")
+           (force-output))))))
+
+(def (main output-dir (profile "static"))
+  (case (string->symbol profile)
+    ((static) (void))
+    ((installed) (validate-compiled-tape-interface! (gerbil-path)))
+    (else (error "unknown Org native program build profile" profile)))
+  (create-directory* output-dir)
   (displayln "ORG-PARSER-STAGE begin")
   (force-output)
   ;; Headers are explicit native build contract inputs, not an extension to

@@ -1,7 +1,10 @@
 ;;; Emit a Gerbil package for the Parser-produced compilation units.
 (import (only-in :std/misc/ports read-all-as-string)
-        (only-in :std/misc/process run-process))
-(export write-fold-package fold-package-source-directory)
+        (only-in :std/misc/process run-process)
+        (only-in :std/source this-source-file)
+        (only-in :gerbil-parser/compiler-build-support run-build-tool))
+(export write-fold-package fold-package-source-directory
+        compile-fold-package! clean-fold-package!)
 
 ;; Generated sources are a native source package, never the installation prefix.
 (def (fold-package-source-directory prefix)
@@ -27,3 +30,15 @@
         (display "\n(export main)\n" port))))
   ;; The native package manager executes build.ss directly.
   (run-process (list "chmod" "u+x" build) stdout-redirection: #f))
+
+(def (compile-fold-package! prefix options)
+  (def generator (path-expand "fold-generator.ss" (path-directory (this-source-file))))
+  (run-build-tool (list "gxi" generator prefix "dynamic"))
+  (run-process (cons* "gerbil" "build" options)
+               directory: (fold-package-source-directory prefix)
+               stdout-redirection: #f))
+
+(def (clean-fold-package! prefix)
+  (def source (fold-package-source-directory prefix))
+  (when (file-exists? (path-expand "build.ss" source))
+    (run-process '("gerbil" "clean") directory: source stdout-redirection: #f)))
