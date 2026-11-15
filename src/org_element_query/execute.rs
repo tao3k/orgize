@@ -1,9 +1,6 @@
 //! Execute a typed Scheme-AOT query pack against a parsed Org Element graph.
 
-use crate::org_product::{
-    GraphRecord,
-    query::{GraphIndexError, GraphRelation},
-};
+use crate::org_product::{GraphIndexError, GraphRecord, GraphRelation};
 
 use crate::org_aot::{OrgAotDocument, org_graph_spec};
 

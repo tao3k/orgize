@@ -157,6 +157,7 @@ source_entry!(SyntaxNode);
 source_entry!(SyntaxToken);
 
 #[derive(Clone, Debug)]
+/// Node or token in producer order.
 pub enum SyntaxElement {
     Node(SyntaxNode),
     Token(SyntaxToken),
@@ -193,6 +194,7 @@ impl SyntaxElement {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+/// Entry or exit of a navigation row in a preorder traversal.
 pub enum WalkEvent<T> {
     Enter(T),
     Leave(T),

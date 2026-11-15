@@ -5,10 +5,7 @@
 
 use std::collections::HashMap;
 
-use crate::org_product::{
-    GraphProjectionSpec, GraphRecord,
-    query::{GraphIndexError, GraphRelation},
-};
+use crate::org_product::{GraphIndexError, GraphProjectionSpec, GraphRecord, GraphRelation};
 
 use crate::{
     org_aot::OrgAotDocument,

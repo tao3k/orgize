@@ -46,11 +46,10 @@ mod tests;
 
 pub use config::ParseConfig;
 mod org_product;
-mod org_view;
 pub use org::Org;
-pub use org_product::{GraphFieldValue, GraphRecord};
-pub use org_view::{
-    SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken, TextRange, TextSize, WalkEvent,
+pub use org_product::{
+    GraphFieldValue, GraphRecord, SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken, TextRange,
+    TextSize, WalkEvent,
 };
 
 #[cfg(test)]

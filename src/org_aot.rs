@@ -6,14 +6,14 @@
 
 use std::{collections::HashMap, sync::OnceLock};
 
-use crate::org_product::{DocumentProduct, query::GraphIndex};
+use crate::org_product::{DocumentProduct, GraphIndex};
 pub use crate::org_product::{
     GraphFieldMode, GraphFieldRule, GraphNodeRule, GraphProjectionSpec, GraphRecord, KindCategory,
     KindSpec, LanguageSpec, ParseReceipt,
 };
 use crate::{SyntaxNode, TextRange};
 
-use crate::config::ParseConfig;
+use crate::ParseConfig;
 use crate::contract_feature::{
     ContractExecutionError, ContractPack, ContractResult, ContractRule, ContractScopeNodeId,
     evaluate_contract,
