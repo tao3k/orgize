@@ -1,37 +1,56 @@
-name: CI
+name: Orgize macOS dependency and Scheme qualification
 
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - main
-      - v0.10
 
-concurrency:
-  group: orgize-ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+  GERBIL_PATH: ${{ github.workspace }}/.gerbil-ci
+  ORGIZE_GERBIL_NATIVE_OUTPUT: ${{ github.workspace }}/target/program-objects
+  ORGIZE_SOURCE_REV: 395b2316c67623565b465fad70b4292eaed5d969
+  ORGIZE_PARSER_REV: 70d700837a32ca34408066f3fd90d55c9d65e6db
+  ORGIZE_YUANXU_REV: b47b258ccc07d235b022410d65ebe3e5da9620a9
 
 jobs:
-  format:
-    name: Rust formatting
-    runs-on: ubuntu-latest
+  macos-scheme:
+    name: macOS dependency revisions and Scheme tests
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ env.ORGIZE_SOURCE_REV }}
       - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: ./.github/actions/setup-native
+      - name: Fetch locked Cargo sources
+        run: cargo fetch --locked
+      - name: Install declared dependencies
+        run: just ci-dependencies
+      - name: Verify installed dependency revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          just ci-verify-dependencies
+          packages="$GERBIL_PATH/pkg/github.com/tao3k"
+          source_rev="$(git rev-parse HEAD)"
+          parser_rev="$(git -C "$packages/gerbil-parser" rev-parse HEAD)"
+          yuanxu_rev="$(git -C "$packages/gebril-yuanxu" rev-parse HEAD)"
+          test "$source_rev" = "$ORGIZE_SOURCE_REV"
+          test "$parser_rev" = "$ORGIZE_PARSER_REV"
+          test "$yuanxu_rev" = "$ORGIZE_YUANXU_REV"
+          printf 'Orgize %s\nParser %s\nYuanxu %s\n' "$source_rev" "$parser_rev" "$yuanxu_rev"
+      - name: Build pinned Scheme program
+        run: just ci-build-program
+      - name: Verify native Scheme owners through gerbil test
+        run: just ci-scheme-test
+      - name: Preserve Scheme qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          components: rustfmt
-      - run: cargo fmt --all -- --check
-
-  qualify:
-    name: qualify / ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-26]
-    uses: ./.github/workflows/qualify.yml
-    with:
-      runner: ${{ matrix.os }}
+          name: orgize-macos-scheme-395b231
+          path: target/scheme-test/
+          if-no-files-found: ignore
