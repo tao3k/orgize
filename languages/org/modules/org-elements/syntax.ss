@@ -53,26 +53,16 @@
     ((_ clause clauses ...)
      (syntax (org-element-predicate-any (list clause clauses ...))))))
 
-(defsyntax (at stx)
-  (syntax-case stx (scope)
-    ((_ scope)
-     (syntax (make-org-element-relation-clause 'at 'scope)))
-    ((_ binding-name)
-     (syntax (make-org-element-relation-clause
-              'at (symbol->string 'binding-name))))))
+;; Relation targets name Org query bindings. The reserved scope target does
+;; not depend on a Scheme binding with the same spelling at the call site.
+(defsyntax (org-element-relation stx)
+  (syntax-case stx ()
+    ((_ relation target)
+     (identifier? (syntax target))
+     (if (eq? (stx-e (syntax target)) 'scope)
+         (syntax (make-org-element-relation-clause 'relation 'scope))
+         (syntax (make-org-element-relation-clause 'relation (symbol->string 'target)))))))
 
-(defsyntax (child-of stx)
-  (syntax-case stx (scope)
-    ((_ scope)
-     (syntax (make-org-element-relation-clause 'child-of 'scope)))
-    ((_ binding-name)
-     (syntax (make-org-element-relation-clause
-              'child-of (symbol->string 'binding-name))))))
-
-(defsyntax (descendant-of stx)
-  (syntax-case stx (scope)
-    ((_ scope)
-     (syntax (make-org-element-relation-clause 'descendant-of 'scope)))
-    ((_ binding-name)
-     (syntax (make-org-element-relation-clause
-              'descendant-of (symbol->string 'binding-name))))))
+(defrule (at target) (org-element-relation at target))
+(defrule (child-of target) (org-element-relation child-of target))
+(defrule (descendant-of target) (org-element-relation descendant-of target))

@@ -38,7 +38,7 @@
                  todo-keyword-matches?
                  memory-headline-state )
         (only-in "../languages/org/modules/org-elements/values.ss"
-                 make-org-headline-properties org-headline-property-field)
+                 make-org-headline-properties org-headline-property-field org-element-query-target)
         (only-in "../languages/org/modules/org-elements/link-properties.ss"
                  org-image-link?
                  org-link-kind
@@ -77,7 +77,7 @@
                  org-element-lineage? org-element-select
                  org-named-element-query-id org-named-element-query-query
                  org-element-with-headline-properties
-                 org-elements property property-contains at child-of))
+                 org-elements property property-contains at child-of descendant-of))
 (export org-elements-module-test)
 
 (def sample-graph
@@ -320,6 +320,14 @@
               (org-elements headline (property title "A")
                             (property title "B"))) => #t)
       (check-exception (org-elements invented-kind) true))
+    (test-case "query scope is independent of the caller's Scheme binding"
+      (let ((scope 0) (evidence "caller value"))
+        (check (org-element-query-target (org-elements headline (at scope))) => 'scope)
+        (check (org-element-query-target (org-elements headline (child-of scope))) => 'scope)
+        (check (org-element-query-target (org-elements link (descendant-of scope))) => 'scope)
+        (check (org-element-query-target (org-elements link (descendant-of evidence))) => "evidence")
+        (check scope => 0)
+        (check evidence => "caller value")))
     (test-case "tagged named queries use derived headline properties"
       (let* ((graph (org-element-with-headline-properties headline-graph))
              (context (make-org-element-query-context graph))
