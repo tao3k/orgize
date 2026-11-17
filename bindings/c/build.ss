@@ -1,7 +1,16 @@
 ;;; Actual foreign leaves retain their platform compiler options.
 (import (only-in :clan/poo/object .def .o)
-        (only-in :std/source this-source-file))
+        (only-in :std/source this-source-file)
+        (only-in :gerbil-parser/compiler-build-support run-build-tool))
+(export Build)
+
 (.def Build
+  .finish:
+  (lambda ()
+    (def root (path-expand "../.." (path-directory (this-source-file))))
+    (run-build-tool
+      (list "gxi" (path-expand "bindings/c/stage-parser.ss" root)
+            (path-expand "target/gerbil-parser" root) "installed")))
   defbuild-script:
   (.o spec:
     (let ((include-option (string-append "-I" (path-expand "include" (path-directory (this-source-file)))))
