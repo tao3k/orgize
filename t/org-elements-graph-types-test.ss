@@ -3,7 +3,7 @@
 ;;; Native graph-query API compatibility, independent of grammar generation.
 (import :std/test
         (only-in :clan/poo/object .o .cc .ref)
-        (only-in :clan/poo/mop TypeError?)
+        (only-in :clan/poo/type TypeError?)
         (only-in :gerbil-parser/graph-query-support graph-query-context?)
         (only-in :orgize/languages/org/modules/org-elements/values
                  make-org-element-graph-view)

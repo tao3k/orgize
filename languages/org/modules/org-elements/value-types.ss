@@ -1,6 +1,6 @@
 ;;; Org fields use native Records; only catalog and predicate bounds are Org policy.
 (import (only-in :clan/poo/object .ref)
-        (only-in :clan/poo/mop define-type Type. element? Any Bool Fun)
+        (only-in :clan/poo/type define-type Type. element? Any Bool Fun)
         (only-in :clan/poo/type Record String List Exactly Enum Or OrFalse)
         (only-in :clan/poo/number UInt)
         (only-in :std/list/list every)

@@ -1,5 +1,5 @@
 ;;; Org contracts use native Record field admission and MOP validation.
-(import (only-in :clan/poo/mop define-type Type. element? Bool)
+(import (only-in :clan/poo/type define-type Type. element? Bool)
         (only-in :clan/poo/type Record Exactly Enum String List OrFalse)
         (only-in :clan/poo/number UInt)
         (only-in :orgize/languages/org/modules/org-elements/value-types OrgElementQuery))

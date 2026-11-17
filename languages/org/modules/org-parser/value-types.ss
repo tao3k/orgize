@@ -1,6 +1,6 @@
 ;;; Native Records admit Org strategy fields; Parser owns grammar predicates.
 (import (only-in :clan/poo/object .slot?)
-        (only-in :clan/poo/mop define-type Type. element?)
+        (only-in :clan/poo/type define-type Type. element?)
         (only-in :clan/poo/type Record Exactly Symbol String List Enum)
         (only-in :gerbil-parser/language-support/grammar block-line?))
 (export +org-event-block-kind+ +org-named-block-kind+ +org-inline-markup-kind+

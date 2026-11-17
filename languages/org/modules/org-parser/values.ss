@@ -2,7 +2,7 @@
 ;;; POO strategy values are projected to event IR before runtime.
 
 (import (only-in :clan/poo/object .o .ref)
-        (only-in :clan/poo/mop validate)
+        (only-in :clan/poo/type validate)
         (only-in :tao3k/yuanxu/object/interface defpoo-object-family)
         (only-in :gerbil-parser/event-fold-program-support prepare-event-fold-program)
         (only-in "value-types.ss"

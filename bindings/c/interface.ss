@@ -1,4 +1,8 @@
-(import (only-in :tao3k/yuanxu/module-system/source/declaration .def))
+(import (only-in :clan/poo/object .def .o)
+        (only-in "./types.ss" OrgNativeScopeContract)
+        (only-in "./objects.ss" OrgNative.))
+
+(export OrgNative)
 
 (.def OrgNative
   identity: 'c
