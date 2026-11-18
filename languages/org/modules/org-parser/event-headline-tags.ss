@@ -60,7 +60,10 @@
 
 (def (event-headline-title-forms from until)
   ;; Only the final whitespace-delimited word can contain a tag suffix.
-  `((set-uint headline-tag-cursor (offset (line-last-word-start ,from ,until)))
+  `((set-uint headline-tag-cursor (offset ,from))
+    (for-line-bytes headline-tag-byte-index ,from ,until
+      ((if (line-bytes-any-in? ,tag-index ,tag-next (9 32))
+           ((set-uint headline-tag-cursor (offset ,tag-next))) ())))
     (if (and (offset-less? (state-offset headline-tag-cursor) ,until)
              (line-byte-equal? (state-offset headline-tag-cursor) 58))
         ((set-uint headline-tag-start (state headline-tag-cursor))
