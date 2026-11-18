@@ -2,7 +2,7 @@
 ;;; Maintained Org Element catalog and projection are the module's authority.
 
 (import (only-in :clan/poo/object .o)
-        (only-in :gerbil-parser/graph-projection-support
+        (only-in :gerbil-parser/graph-projection-support/values
                  graph-projection?)
         (only-in "value-types.ss"
                  +org-element-schema+ +org-element-profile-kind+

@@ -59,15 +59,14 @@
        ((token HeadlineTitle ,from ,until))))
 
 (def (event-headline-title-forms from until)
-  `((if (line-bytes-any-in? ,from ,until (58))
-        ((if (uint-positive? (state headline-tag-cursor))
-             ((set-uint headline-tag-mode (uint 0))
-              (set-uint headline-tag-count (uint 0))) ())
-         (set-uint headline-tag-cursor (offset ,from))
-         (if (line-byte-equal? ,from 58)
-             ((set-uint headline-tag-start (offset ,from))
-              (set-uint headline-tag-mode (uint 1))) ())
-         (for-line-bytes headline-tag-byte-index ,from ,until
+  ;; Only the final whitespace-delimited word can contain a tag suffix.
+  `((set-uint headline-tag-cursor (offset (line-last-word-start ,from ,until)))
+    (if (and (offset-less? (state-offset headline-tag-cursor) ,until)
+             (line-byte-equal? (state-offset headline-tag-cursor) 58))
+        ((set-uint headline-tag-start (state headline-tag-cursor))
+         (set-uint headline-tag-mode (uint 1))
+         (set-uint headline-tag-count (uint 0))
+         (for-line-bytes headline-tag-byte-index (state-offset headline-tag-cursor) ,until
            ,(headline-tag-scan-step))
          (if (and (uint-equal? (state headline-tag-mode) (uint 3))
                   (uint-positive? (state headline-tag-count)))

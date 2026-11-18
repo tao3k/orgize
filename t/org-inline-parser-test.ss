@@ -20,7 +20,7 @@
                  make-org-inline-script org-inline-script-node
                  make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root org-event-strategy-helper-descriptors org-event-strategy-program)
-        (only-in "org-parser-test-support.ss" check-org-ast-with org-events-cover-source?)
+        (only-in "org-parser-test-support.ss" check-org-ast-with org-events->ast org-events-cover-source?)
         (only-in "../languages/org/modules/org-parser/event-runtime.ss"
                  parse-org-native-events
                  parse-org-native-events-with-inlinetask-level
@@ -168,7 +168,27 @@
          (OrgSection
           (OrgHeadline
            (HeadlineLine 0 1) (HeadlineTrivia 1 2)
-           (HeadlineTitle 2 13) (HeadlineTrivia 13 14))))))
+           (HeadlineTitle 2 13) (HeadlineTrivia 13 14)))))
+      (for-each
+       (lambda (width)
+         (let* ((prefix (make-string width #\x))
+                (source (string-append "* " prefix " :α:plan:\n"))
+                (tag-start (+ 3 width))
+                (events (parse-org-native-events source)))
+           (check (org-events-cover-source? source events) => #t)
+           (check (org-events->ast events)
+             => `(OrgFile
+                  (OrgSection
+                   (OrgHeadline
+                    (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                    (HeadlineTitle 2 ,tag-start)
+                    (HeadlineTagTrivia ,tag-start ,(+ tag-start 1))
+                    (HeadlineTagValue ,(+ tag-start 1) ,(+ tag-start 3))
+                    (HeadlineTagTrivia ,(+ tag-start 3) ,(+ tag-start 4))
+                    (HeadlineTagValue ,(+ tag-start 4) ,(+ tag-start 8))
+                    (HeadlineTagTrivia ,(+ tag-start 8) ,(+ tag-start 9))
+                    (HeadlineTrivia ,(+ tag-start 9) ,(+ tag-start 10))))))))
+       '(16 1024 8192)))
     (test-case "inlinetask Element keeps its END and leaves following outline intact"
       (check-org-ast-with parse-org-native-events
         "*************** TODO Inline\nBody.\n*************** END\n* Next\n"
