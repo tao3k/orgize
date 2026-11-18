@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org Element POO queries -> typed Rust AOT pack, independent of Contract.
 
-(import (only-in :gerbil-parser/rust-syntax-support
+(import (only-in :gerbil-parser/language-support/rust/syntax
                  rust-struct rust-static rust-array
                  rust-string rust-identifier rust-render)
         (only-in :gerbil-parser/graph-projection-support

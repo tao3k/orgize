@@ -202,7 +202,7 @@ paths to reviewed Parser interfaces. =only-in= continues to select names.
 | Native line traversal | =source-line-support= |
 | Immutable Fold program admission | =event-fold-program-support= |
 | Generator and compiler services | =language-build-support= |
-| Immutable Rust syntax values | =rust-syntax-support= |
+| Immutable Rust syntax values | =language-support/rust/syntax= |
 | Test assertions | =language-test-support= |
 
 Pure text definitions were moved out of =src/compiler/rust-pure-aot.ss= into

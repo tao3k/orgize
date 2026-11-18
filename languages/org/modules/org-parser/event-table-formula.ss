@@ -2,7 +2,7 @@
 ;;; Org TBLFM syntax is composed from admitted POO source-fragment policies.
 ;;; The same helpers run in Scheme tests and the native event AOT program.
 
-(import (only-in :gerbil-parser/rust-runtime-event-support
+(import (only-in :gerbil-parser/language-support/source-fragments/objects
                  make-source-delimited-fragment
                  make-source-first-split
                  make-source-reference-scan

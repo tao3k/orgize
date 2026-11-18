@@ -2,7 +2,7 @@
 ;;; Thin consumer: the shared engine owns admission and native code generation.
 (import (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-parser/event-fold-build-support event-fold-scheme-module-sources)
-        (only-in :gerbil-parser/rust-runtime-event-support run-event-fold)
+        (only-in :gerbil-parser/language-support/event-fold/run run-event-fold)
         (only-in :orgize/languages/org/modules/org-parser/grammar org-mode-language-grammar)
         (only-in :orgize/languages/org/modules/org-parser/event-strategy
                  org-event-initial org-event-line-forms org-event-finish-forms org-event-helpers)
