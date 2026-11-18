@@ -1,3 +1,5 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;; SPDX-License-Identifier: Apache-2.0 AND LGPL-2.1-or-later
 ;;; Orgize's package build projections come from its Module Build owners.
 (import (for-syntax
           (only-in :std/source this-source-file)
@@ -17,4 +19,5 @@
 
 (def orgize.package.exports
   (.o (:: @ orgize.init.exports)
+      __std-make-spec: '((gxc: "init" (extra-inputs: ("package-spec.ss"))))
       build-actions: (.+ FoldBuild ProgramBuild)))
