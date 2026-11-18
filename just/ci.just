@@ -16,7 +16,9 @@ ci-build-provider:
 ci-dependencies:
     command -v gerbil
     just public-parser-interface-check
-    {{ scheme_env }} GAMBOPT="{{ package_gambopt }}" gerbil deps --install
+    # Let the package manager finish installing before starting the editor index.
+    {{ scheme_env }} GAMBOPT="{{ package_gambopt }}" gerbil interactive -e '(import (only-in :gerbil/tools/gxpkg pkg-install pkg-plist with-pkg-build-env)) (with-pkg-build-env (for-each pkg-install (pgetq depend: (pkg-plist ".") (quote ()))))'
+    cd "{{ env_var('GERBIL_PATH') }}/pkg" && {{ scheme_env }} GAMBOPT="{{ package_gambopt }}" gxtags . > ../dependency-index.log 2>&1 || { status=$?; tail -n 80 ../dependency-index.log; exit "$status"; }
 
 [group('checks')]
 ci-verify-dependencies:
