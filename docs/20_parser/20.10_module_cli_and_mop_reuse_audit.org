@@ -196,17 +196,17 @@ paths to reviewed Parser interfaces. =only-in= continues to select names.
 |------------+------------------|
 | Product language and common Module declarations | =:tao3k/parser/prelude= |
 | Grammar objects, contextual declarations, identity | =language-support/grammar= |
-| ParseArtifact and events | =artifact-support= |
-| Graph constructors and accessors | =graph-projection-support= / =graph-query-support= |
-| Pure text operations | =text-support= |
-| Native line traversal | =source-line-support= |
-| Immutable Fold program admission | =event-fold-program-support= |
-| Generator and compiler services | =language-build-support= |
+| ParseArtifact and events | =execution/artifact= |
+| Graph constructors and accessors | =graph-support/projection= / =graph-support/query= |
+| Pure text operations | =text/strings= |
+| Native line traversal | =text/source-lines= |
+| Immutable Fold program admission | =language-support/event-fold/program= |
+| Generator and compiler services | =language-support/build= |
 | Immutable Rust syntax values | =language-support/rust/syntax= |
-| Test assertions | =language-test-support= |
+| Test assertions | =language-support/testing= |
 
 Pure text definitions were moved out of =src/compiler/rust-pure-aot.ss= into
-=text-support.ss=; Rust lowering reuses the same definitions. Public text imports
+=text/strings.ss=; Rust lowering reuses the same definitions. Public text imports
 are tested to load no compiler modules. Build, test and foreign scanner services
 retain separate entrypoints. Existing public roots discover their dependencies
 through the native closure; no new =library-roots= inventory was added.

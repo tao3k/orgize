@@ -79,7 +79,7 @@ scheme-parser-projection-test source output load_path:
 # cannot admit a Gerbil installation interrupted before its loadable objects were produced.
 [private]
 scheme-aligned-parser-module-check output load_path:
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive -e '(import :gerbil-parser/language-support/grammar :gerbil-parser/graph-query-support :gerbil-parser/language-support/event-fold/run)'
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive -e '(import :gerbil-parser/language-support/grammar :gerbil-parser/graph-support/query :gerbil-parser/language-support/event-fold/run)'
 
 [group('scheme')]
 scheme-aligned-program-stage-receipt output load_path parser_output org_output bridge_output:
