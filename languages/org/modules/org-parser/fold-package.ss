@@ -2,7 +2,7 @@
 (import (only-in :std/misc/ports read-all-as-string)
         (only-in :std/misc/process run-process)
         (only-in :std/source this-source-file)
-        (only-in :gerbil-parser/compiler-build-support run-build-tool))
+        (only-in :gerbil-parser/build-support/compiler run-build-tool))
 (export write-fold-package fold-package-source-directory
         compile-fold-package! clean-fold-package!)
 

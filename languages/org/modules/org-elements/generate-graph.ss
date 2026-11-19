@@ -4,7 +4,7 @@
 
 (import (only-in :std/io/tempfile call-with-temporary-directory)
         (only-in :std/misc/ports read-all-as-string)
-        (only-in :gerbil-parser/graph-projection-support
+        (only-in :gerbil-parser/graph-support/projection
                  generate-graph-projection-runtime-module)
         (only-in :orgize/languages/org/modules/org-parser/grammar org-mode-language-grammar)
         (only-in "graph.ss" org-graph-projection))

@@ -1,11 +1,11 @@
 ;;; -*- Gerbil -*-
 ;;; Org owns strategy declarations and generated text; Gerbil owns products.
-(import (only-in :gerbil-parser/event-fold-build-support
+(import (only-in :gerbil-parser/language-support/event-fold/emit
                  event-fold-scheme-module-sources make-event-fold-consumer)
         (only-in "fold-package.ss" write-fold-package fold-package-source-directory)
-        (only-in :gerbil-parser/event-fold-build-support
+        (only-in :gerbil-parser/language-support/event-fold/emit
                  compile-event-fold-scheme-units)
-        (only-in :gerbil-parser/graph-projection-support
+        (only-in :gerbil-parser/graph-support/projection
                  fold-graph-catalog graph-projection-nodes graph-node-syntax-kind)
         (only-in "../org-elements/graph.ss" org-graph-projection)
         (only-in "grammar.ss" org-mode-language-grammar)
@@ -22,7 +22,7 @@
      (lambda (port)
        (for-each
         (lambda (form) (write form port) (newline port))
-        `((import (only-in :gerbil-parser/event-fold-program-support
+        `((import (only-in :gerbil-parser/language-support/event-fold/program
                             make-fold-graph fold-graph-start! fold-graph-token!
                             fold-graph-finish! fold-graph-publish!))
           (export make-org-fold-graph fold-graph-start! fold-graph-token!

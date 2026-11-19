@@ -1,6 +1,6 @@
 ;;; The diagnostic clock needs dynamic lookup for Darwin bundles.
 (import (only-in :clan/poo/object .def .o))
-(import (only-in :gerbil-parser/compiler-build-support initialize-compiler-build!)
+(import (only-in :gerbil-parser/build-support/compiler initialize-compiler-build!)
         (only-in "./fold-package.ss" compile-fold-package! clean-fold-package!))
 (export Build)
 

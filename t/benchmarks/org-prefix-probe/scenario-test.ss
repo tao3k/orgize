@@ -1,5 +1,5 @@
 (import (only-in :std/test check test-case test-suite)
-        (only-in :gerbil-parser/source-line-support line-starts-with?))
+        (only-in :gerbil-parser/text/source-lines line-starts-with?))
 (export prefix-probe-test)
 
 (def prefix-probe-test

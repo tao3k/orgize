@@ -1,7 +1,7 @@
 ;;; Actual foreign leaves retain their platform compiler options.
 (import (only-in :clan/poo/object .def .o)
         (only-in :std/source this-source-file)
-        (only-in :gerbil-parser/compiler-build-support run-build-tool))
+        (only-in :gerbil-parser/build-support/compiler run-build-tool))
 (export Build)
 
 (.def Build

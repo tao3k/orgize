@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Encode Parser's projected navigation and Element data for the Rust consumer.
 (import (for-syntax
-         (only-in :gerbil-parser/graph-projection-support
+         (only-in :gerbil-parser/graph-support/projection
                   graph-projection-digest graph-projection-nodes graph-node-syntax-kind
                   graph-node-fields graph-field-name)
          (only-in "../org-parser/grammar.ss" org-mode-language-grammar)

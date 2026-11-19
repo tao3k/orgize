@@ -3,7 +3,7 @@
 ;;; No second headline node or parser-engine semantics are introduced.
 
 (import (only-in :std/string/misc string-trim)
-        (only-in :gerbil-parser/text-support
+        (only-in :gerbil-parser/text/strings
                  string-before ascii-ci=?
                  string-after string-first-word
                  string-trim-start

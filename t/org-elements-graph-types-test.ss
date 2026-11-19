@@ -4,7 +4,7 @@
 (import :std/test
         (only-in :clan/poo/object .o .cc .ref)
         (only-in :clan/poo/type TypeError?)
-        (only-in :gerbil-parser/graph-query-support graph-query-context?)
+        (only-in :gerbil-parser/graph-support/query graph-query-context?)
         (only-in :orgize/languages/org/modules/org-elements/values
                  make-org-element-graph-view)
         (only-in :orgize/languages/org/modules/org-elements/query

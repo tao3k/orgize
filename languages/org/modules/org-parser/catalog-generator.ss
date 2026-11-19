@@ -1,7 +1,7 @@
 ;;; Emit the host's labels and identities from Parser's grammar descriptor.
 (import (only-in :gerbil-parser/language-support/grammar language-grammar-ir language-grammar-machine)
         (only-in :gerbil-parser/language-support/loader-identity descriptor-ref)
-        (only-in :gerbil-parser/artifact-support parser-machine-grammar-digest))
+        (only-in :gerbil-parser/execution/artifact parser-machine-grammar-digest))
 (export generate-language-catalog)
 
 (def (generate-language-catalog path descriptor)

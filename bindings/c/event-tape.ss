@@ -19,13 +19,13 @@
         (only-in :orgize/languages/org/modules/org-contract/contract-normalize contract-events->rows)
         (only-in :orgize/languages/org/modules/org-contract/document-plan org-contract-document-plan)
         (only-in :orgize/languages/org/modules/org-contract/expectation-parser parse-org-expectation)
-        (only-in :gerbil-parser/artifact-support
+        (only-in :gerbil-parser/execution/artifact
                  parse-artifact-success? parse-artifact-events
                  event-kind event-start event-end token-event-token-kind token-event-lexeme)
         (for-syntax
          (only-in :gerbil-parser/language-support/grammar
                  language-grammar-ir language-grammar-machine)
-        (only-in :gerbil-parser/artifact-support parser-machine-grammar-digest)
+        (only-in :gerbil-parser/execution/artifact parser-machine-grammar-digest)
         (only-in :orgize/languages/org/modules/org-parser/grammar org-mode-language-grammar)
         (only-in :orgize/languages/org/modules/org-contract/grammar org-contract-language-grammar)
         (only-in :orgize/languages/org/modules/org-contract/expectation-grammar org-expectation-language-grammar)))

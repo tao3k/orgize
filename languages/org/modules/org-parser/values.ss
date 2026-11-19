@@ -4,7 +4,7 @@
 (import (only-in :clan/poo/object .o .ref)
         (only-in :clan/poo/type validate)
         (only-in :tao3k/yuanxu/object/interface defpoo-object-family)
-        (only-in :gerbil-parser/event-fold-program-support prepare-event-fold-program)
+        (only-in :gerbil-parser/language-support/event-fold/program prepare-event-fold-program)
         (only-in "value-types.ss"
                  +org-event-block-kind+ +org-named-block-kind+
                  +org-inline-markup-kind+

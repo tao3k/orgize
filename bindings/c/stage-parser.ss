@@ -2,7 +2,7 @@
 ;;; The existing native-build owner stages the compiler's program closure.
 (import (only-in :gerbil-scheme-rust/scheme/program-build gerbil-rs-stage-program)
         (only-in :std/make pkg-config)
-        (only-in :gerbil-parser/compiler-build-support run-build-tool))
+        (only-in :gerbil-parser/build-support/compiler run-build-tool))
 (export main)
 
 (def (crypto-static-link-options)

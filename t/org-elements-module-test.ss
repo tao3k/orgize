@@ -4,7 +4,7 @@
 (import (only-in "../languages/org/modules/org-elements/config.ss" org-elements-default-profile)
         (only-in :std/test check check-exception test-case test-suite)
         (only-in :clan/poo/object .o .ref .slot?)
-        (only-in :gerbil-parser/graph-query-support graph-query-context?)
+        (only-in :gerbil-parser/graph-support/query graph-query-context?)
         (only-in "../languages/org/modules/org-elements/value-types.ss"
                  +org-element-schema+ +org-element-context-kind+
                  org-element-query-context?)
