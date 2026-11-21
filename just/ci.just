@@ -26,16 +26,20 @@ ci-verify-dependencies:
     just public-parser-interface-check
     package_root="{{ env_var('GERBIL_PATH') }}/pkg/github.com/tao3k"
     for package in gerbil-parser gebril-yuanxu; do
-        dependency=$(rg -o "github\.com/tao3k/$package@[0-9a-f]{40}" gerbil.pkg)
+        dependency=$(rg -o "github\.com/tao3k/$package@[^[:space:]\"]+" gerbil.pkg)
         checkout="$package_root/$package"
         revision="${dependency##*@}"
         actual=$(git -C "$checkout" rev-parse HEAD)
+        if [[ ! "$revision" =~ ^[0-9a-f]{40}$ ]]; then
+            revision="refs/tags/$revision"
+        fi
         expected=$(git -C "$checkout" rev-parse --verify "$revision^{commit}")
         if [[ "$actual" != "$expected" ]]; then
             printf '%s resolves to %s, expected %s\n' "$dependency" "$actual" "$expected" >&2
             exit 1
         fi
         git -C "$checkout" diff --quiet HEAD --
+        printf '%s -> %s\n' "$dependency" "$actual"
     done
 
 [group('checks')]
