@@ -1,11 +1,11 @@
 ;;; Org fields use native Records; only catalog and predicate bounds are Org policy.
 (import (only-in :clan/poo/object .ref)
-        (only-in :clan/poo/mop define-type Type. element? Any Bool Fun)
+        (only-in :clan/poo/type define-type Type. element? Any Bool Fun)
         (only-in :clan/poo/type Record String List Exactly Enum Or OrFalse)
         (only-in :clan/poo/number UInt)
         (only-in :std/list/list every)
-        (only-in :gerbil-parser/graph-query-support GraphQueryViewContract graph-query-context?)
-        (only-in :gerbil-parser/graph-projection-support
+        (only-in :gerbil-parser/graph-support/query GraphQueryViewContract graph-query-context?)
+        (only-in :gerbil-parser/graph-support/values
                  graph-node-label graph-node-fields graph-field-name)
         (only-in "graph-shape.ss" org-graph-shape org-headline-extra-fields))
 (export OrgElementRow OrgElementId OrgElementKind

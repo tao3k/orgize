@@ -102,7 +102,7 @@ fn owner_reply_records_only_on_the_receiving_request() {
 
 #[test]
 fn transport_projection_retains_exact_request_local_values() {
-    for operation in [17, 24, 25, 26] {
+    for operation in [17, 24] {
         let (_, timings) = measure(|| super::record_transport(operation, [11, 13, 17, 23], 19));
         assert_eq!(timings["owner.admission"], 11);
         assert_eq!(timings["owner.service_inclusive"], 13);
@@ -116,11 +116,7 @@ fn transport_projection_retains_exact_request_local_values() {
     }
     super::record_transport(7, [1, 2, 3, 5], 4);
     assert!(measure(|| ()).1.is_empty());
-    for (operation, name) in [
-        (23, "ffi.operation.23"),
-        (25, "ffi.operation.25"),
-        (26, "ffi.operation.26"),
-    ] {
+    for (operation, name) in [(23, "ffi.operation.23"), (24, "ffi.operation.24")] {
         let (value, timings) = measure(|| super::operation(operation, || 7));
         assert_eq!(value, 7);
         assert!(timings.contains_key(name));
@@ -134,26 +130,31 @@ fn transport_projection_retains_exact_request_local_values() {
 
 #[test]
 fn native_envelope_rejects_truncation_and_foreign_identity() {
-    let mut bytes = b"OPR1".to_vec();
+    let mut bytes = b"OPR2".to_vec();
     bytes.extend_from_slice(&7_u64.to_le_bytes());
     bytes.extend_from_slice(&11_u64.to_le_bytes());
     bytes.extend_from_slice(&13_u64.to_le_bytes());
-    bytes.extend_from_slice(b"OEV1payload");
-    for length in 0..32 {
+    bytes.extend_from_slice(&17_u64.to_le_bytes());
+    bytes.extend_from_slice(b"ODV1payload");
+    for length in 0..40 {
         assert!(super::wire::decode(&bytes[..length]).is_err());
     }
     assert_eq!(
         super::wire::decode(&bytes).unwrap(),
-        (7, 11, 13, &bytes[28..])
+        ([7, 11, 13, 17], &bytes[36..])
     );
     let (_, timings) = measure(|| super::native_tape(&bytes).unwrap());
     assert_eq!(timings["fold.service"], 7);
-    assert_eq!(timings["event_tape.encode"], 11);
+    assert_eq!(timings["product.encode"], 11);
     assert_eq!(timings["fold.thread_cpu"], 13);
+    assert_eq!(timings["product.encode_thread_cpu"], 17);
+    bytes[3] = b'1';
+    assert!(super::wire::decode(&bytes).is_err());
+    bytes[3] = b'2';
     bytes[0] = b'X';
     assert!(super::wire::decode(&bytes).is_err());
     bytes[0] = b'O';
-    bytes[28] = b'X';
+    bytes[36] = b'X';
     assert!(super::wire::decode(&bytes).is_err());
 }
 

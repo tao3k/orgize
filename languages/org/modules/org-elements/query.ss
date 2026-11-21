@@ -2,8 +2,8 @@
 ;;; Pure Org Element map, property, lineage, and scoped selection.
 
 (import (only-in :clan/poo/object .o .ref)
-        (only-in :clan/poo/mop element?)
-        (only-in :gerbil-parser/graph-query-support
+        (only-in :clan/poo/type element?)
+        (only-in :gerbil-parser/graph-support/query
                  make-graph-query-context
                  graph-query-map graph-query-lineage? graph-query-select)
         (only-in "value-types.ss"

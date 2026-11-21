@@ -2,7 +2,7 @@
 use super::batch;
 use crate::c_ffi::{ContractInput, ContractOutput};
 use crate::org_aot::{NativeExpressionValue, expression_tape};
-use gerbil_parser_runtime::{KindCategory, LanguageSpec, TreeEvent};
+use crate::org_product::{DocumentProduct, GraphProjectionSpec, LanguageSpec};
 // Native ingress references this crate's C ABI without calling it from Rust.
 // Retain its Rust ABI wrappers and native lifecycle archive in both lanes.
 #[cfg(not(feature = "runtime-scheme"))]
@@ -258,77 +258,62 @@ pub(crate) fn initialize_owner() -> Result<(), String> {
     }
 }
 
-pub(crate) fn parse_events(
+pub(crate) fn parse_document(
     source: &str,
     level: usize,
     policy: usize,
     grammar: &LanguageSpec,
-) -> Result<Vec<TreeEvent>, String> {
-    parse_request(source, 0, level, policy, grammar)
-}
-
-pub(crate) fn parse_events_batch(
-    sources: &[&str],
-    level: usize,
-    policy: usize,
-    grammar: &LanguageSpec,
-    ledger: bool,
-) -> Result<Vec<Result<Vec<TreeEvent>, String>>, String> {
-    if sources.is_empty() {
-        return Ok(Vec::new());
-    }
-    crate::startup::require_initialized()?;
-    let profile = crate::runtime_profile::is_active();
-    let request = crate::runtime_profile::stage("ffi.request_encode", || {
-        batch::encode(sources, level, policy, profile, ledger)
-    })?;
-    let tape =
-        crate::runtime_profile::stage("ffi.transport_inclusive", || transport_parse(request))?;
-    crate::runtime_profile::stage("event_tape.decode", || {
-        batch::decode_batch(tape.as_ref(), sources.len(), grammar, profile)
-    })
-}
-
-#[cfg(test)]
-pub(crate) fn parse_expression_events(
-    source: &str,
-    grammar: &LanguageSpec,
-) -> Result<Vec<TreeEvent>, String> {
-    parse_request(source, 1, 0, 0, grammar)
-}
-
-fn parse_request(
-    source: &str,
-    operation: u8,
-    level: usize,
-    policy: usize,
-    grammar: &LanguageSpec,
-) -> Result<Vec<TreeEvent>, String> {
-    let tape = request_tape(source, operation, level, policy)?;
+    graph: &GraphProjectionSpec,
+) -> Result<DocumentProduct, String> {
+    let tape = request_tape(source, 0, level, policy)?;
     #[cfg(feature = "runtime-profile")]
-    let bytes = if operation == 0 && crate::runtime_profile::is_active() {
+    let bytes = if crate::runtime_profile::is_active() {
         crate::runtime_profile::native_tape(tape.as_ref())?
     } else {
         tape.as_ref()
     };
     #[cfg(not(feature = "runtime-profile"))]
     let bytes = tape.as_ref();
-    crate::runtime_profile::stage("event_tape.decode", || decode(bytes, grammar))
+    crate::runtime_profile::stage("product.decode", || {
+        DocumentProduct::decode(bytes, source, grammar, graph, false)
+    })
+}
+
+pub(crate) fn parse_documents(
+    sources: &[&str],
+    level: usize,
+    policy: usize,
+    grammar: &LanguageSpec,
+    graph: &GraphProjectionSpec,
+    todo_profile: Option<(&[String], &[String])>,
+) -> Result<Vec<Result<DocumentProduct, String>>, String> {
+    if sources.is_empty() {
+        return Ok(Vec::new());
+    }
+    crate::startup::require_initialized()?;
+    let profile = crate::runtime_profile::is_active();
+    let request = crate::runtime_profile::stage("ffi.request_encode", || {
+        batch::encode(sources, level, policy, profile, todo_profile)
+    })?;
+    let tape =
+        crate::runtime_profile::stage("ffi.transport_inclusive", || transport_parse(request))?;
+    crate::runtime_profile::stage("product.decode", || {
+        batch::decode_batch(
+            tape.as_ref(),
+            sources,
+            grammar,
+            graph,
+            todo_profile.is_some(),
+            profile,
+        )
+    })
 }
 
 pub(crate) fn parse_expression_values(
     source: &str,
     grammar: &LanguageSpec,
 ) -> Result<Vec<NativeExpressionValue>, String> {
-    parse_values(source, 2, grammar)
-}
-
-fn parse_values(
-    source: &str,
-    operation: u8,
-    grammar: &LanguageSpec,
-) -> Result<Vec<NativeExpressionValue>, String> {
-    let tape = request_tape(source, operation, 0, 0)?;
+    let tape = request_tape(source, 2, 0, 0)?;
     expression_tape::decode(tape.as_ref(), grammar.grammar_digest)
 }
 
@@ -399,7 +384,7 @@ pub(crate) fn semantic_fields(
     operation: u8,
     fields: &[&str],
 ) -> Result<Vec<NativeExpressionValue>, String> {
-    if !(8..=26).contains(&operation) || fields.is_empty() {
+    if !(8..=24).contains(&operation) || fields.is_empty() {
         return Err("invalid native semantic operation".into());
     }
     crate::startup::require_initialized()?;
@@ -567,49 +552,3 @@ fn transport_parse(bytes: Vec<u8>) -> Result<NativeTape, String> {
         length,
     })
 }
-
-pub(super) fn decode(mut bytes: &[u8], grammar: &LanguageSpec) -> Result<Vec<TreeEvent>, String> {
-    bytes = bytes
-        .strip_prefix(b"OEV1")
-        .and_then(|body| body.strip_prefix(grammar.grammar_digest.as_bytes()))
-        .ok_or("Org native grammar identity mismatch")?;
-    let mut events = Vec::new();
-    while let Some((&tag, tail)) = bytes.split_first() {
-        bytes = tail;
-        if tag == 0 {
-            events.push(TreeEvent::FinishNode);
-            continue;
-        }
-        if !matches!(tag, 1 | 2) {
-            return Err("invalid Org event tag".into());
-        }
-        let width = if tag == 1 { 2 } else { 18 };
-        let record = bytes.get(..width).ok_or("truncated Org native event")?;
-        bytes = &bytes[width..];
-        let kind = u16::from_le_bytes(record[..2].try_into().unwrap());
-        let spec = grammar
-            .kinds
-            .get(usize::from(kind))
-            .ok_or("unknown Org native kind")?;
-        if tag == 1 {
-            if spec.category != KindCategory::Node {
-                return Err("Org native start is not a node".into());
-            }
-            events.push(TreeEvent::StartNode(kind));
-        } else {
-            if spec.category != KindCategory::Token {
-                return Err("Org native token is not a token".into());
-            }
-            let start = usize::try_from(u64::from_le_bytes(record[2..10].try_into().unwrap()))
-                .map_err(|_| "Org native offset overflow")?;
-            let end = usize::try_from(u64::from_le_bytes(record[10..18].try_into().unwrap()))
-                .map_err(|_| "Org native offset overflow")?;
-            events.push(TreeEvent::Token { kind, start, end });
-        }
-    }
-    Ok(events)
-}
-
-#[cfg(test)]
-#[path = "../../tests/unit/org_events.rs"]
-mod tests;

@@ -1,6 +1,6 @@
 //! Build-time access to feature-tagged Scheme blocks through Org Element records.
 
-use gerbil_parser_runtime::GraphRecord;
+use orgize::GraphRecord;
 
 /// Preserve quoted file imports and admit canonical Gerbil library identifiers.
 pub fn module_reference(value: &str) -> Result<String, String> {

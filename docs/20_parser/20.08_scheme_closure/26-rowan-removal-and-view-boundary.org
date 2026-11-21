@@ -13,7 +13,7 @@ Its compiled library is under =target/native-rowan-removal-20261007/parser=.
 Cargo and Gerbil parser pins select this revision. Rowan and
 =gerbil-parser-rowan= are absent from Cargo.toml/Cargo.lock. Rust consumers
 use the upstream runtime/artifact vocabulary; Scheme generator entrypoints
-use =rust-runtime-support= and the runtime graph generator. The checked-in
+use =language-support/rust/emit= and the runtime graph generator. The checked-in
 Rust products have mechanically aligned imports, not a claimed fresh full
 generation receipt. Both former Rowan-specific Rust integration targets
 are renamed to native cutover/navigation targets, preserving their cases.

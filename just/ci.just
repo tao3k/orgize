@@ -16,7 +16,8 @@ ci-build-provider:
 ci-dependencies:
     command -v gerbil
     just public-parser-interface-check
-    {{ scheme_env }} GAMBOPT="{{ package_gambopt }}" gerbil deps --install
+    # Install the build inputs declared in gerbil.pkg. Editor indexing belongs to package-tags.
+    {{ scheme_env }} GAMBOPT="{{ package_gambopt }}" gerbil interactive -e '(import (only-in :gerbil/tools/gxpkg pkg-install pkg-plist with-pkg-build-env)) (with-pkg-build-env (for-each pkg-install (pgetq depend: (pkg-plist ".") (quote ()))))'
 
 [group('checks')]
 ci-verify-dependencies:
@@ -25,11 +26,11 @@ ci-verify-dependencies:
     just public-parser-interface-check
     package_root="{{ env_var('GERBIL_PATH') }}/pkg/github.com/tao3k"
     for package in gerbil-parser gebril-yuanxu; do
-        dependency=$(rg -o "github\.com/tao3k/$package@v[0-9]+\.[0-9]+\.[0-9]+" gerbil.pkg)
+        dependency=$(rg -o "github\.com/tao3k/$package@[0-9a-f]{40}" gerbil.pkg)
         checkout="$package_root/$package"
-        tag="${dependency##*@}"
+        revision="${dependency##*@}"
         actual=$(git -C "$checkout" rev-parse HEAD)
-        expected=$(git -C "$checkout" rev-parse --verify "refs/tags/$tag^{commit}")
+        expected=$(git -C "$checkout" rev-parse --verify "$revision^{commit}")
         if [[ "$actual" != "$expected" ]]; then
             printf '%s resolves to %s, expected %s\n' "$dependency" "$actual" "$expected" >&2
             exit 1
@@ -39,7 +40,7 @@ ci-verify-dependencies:
 
 [group('checks')]
 ci-build-program:
-    just alignment-dependency-check "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-parser-runtime") | .manifest_path | sub("/rust/gerbil-parser-runtime/Cargo.toml$"; "")')" "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')"
+    just alignment-dependency-check "{{ env_var('GERBIL_PATH') }}/pkg/github.com/tao3k/gerbil-parser" "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')"
     cd "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')" && {{ scheme_env }} GAMBOPT="{{ ci_build_gambopt }}" {{ timeout_command }} --signal=TERM --kill-after=5s 600s gerbil build --optimized
     {{ scheme_env }} GAMBOPT="{{ ci_build_gambopt }}" {{ timeout_command }} --signal=TERM --kill-after=5s {{ if host_os == "macos" { "900s" } else { "600s" } }} gerbil build --optimized
     just parser-program-source-check "{{ justfile_directory() }}/target/gerbil-parser/program.json" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}"
@@ -48,7 +49,7 @@ ci-build-program:
 [group('checks')]
 ci-verify-prepared:
     just ci-verify-dependencies
-    just alignment-dependency-check "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-parser-runtime") | .manifest_path | sub("/rust/gerbil-parser-runtime/Cargo.toml$"; "")')" "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')"
+    just alignment-dependency-check "{{ env_var('GERBIL_PATH') }}/pkg/github.com/tao3k/gerbil-parser" "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')"
     just parser-program-source-check "{{ justfile_directory() }}/target/gerbil-parser/program.json" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}"
 
 # gxtest owns discovery, execution and exit status. The observer only keeps
@@ -59,7 +60,7 @@ ci-scheme-test:
     set -euo pipefail
     mkdir -p target/scheme-test
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" {{ timeout_command }} --foreground --signal=TERM --kill-after=3s 120s python3 tools/ci/watch-real-output.py {{ if host_os == "macos" { "env DYLD_PRINT_APIS=1" } else { "env" } }} gxi :gerbil-scheme-rust/scheme/build test "{{ justfile_directory() }}" orgize-test.ss 2>&1 | tee target/scheme-test/scheme-test.log
-    test "$(rg -c '^CASE-OK ' target/scheme-test/scheme-test.log)" -eq 237
+    test "$(rg -c '^CASE-OK ' target/scheme-test/scheme-test.log)" -eq 238
     test "$(rg -c '^SUITE-OK ' target/scheme-test/scheme-test.log)" -eq 19
     rg --quiet '^OK$' target/scheme-test/scheme-test.log
     if rg --quiet 'ERROR|FAILED|FAILURE|FAIL:' target/scheme-test/scheme-test.log; then
@@ -79,7 +80,20 @@ ci-rust-native-startup features:
 # Reuse the same Darwin/native linker policy as local qualification.
 [group('checks')]
 ci-rust-test features: (ci-rust-native-startup features)
-    {{ platform_env }} {{ platform_rust_flags }} cargo test --locked --workspace --tests --examples --no-default-features --features "{{ features }}" -- --skip tests::explicit_startup_precedes_parallel_native_unit_cases --nocapture
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p target/contract-control
+    contract_test_status=0
+    {{ platform_env }} {{ platform_rust_flags }} cargo test --locked --workspace --tests --examples --no-default-features --features "{{ features }}" -- --skip tests::explicit_startup_precedes_parallel_native_unit_cases --nocapture 2>&1 | tee target/contract-control/tests.log || contract_test_status=$?
+    if (( contract_test_status != 0 )); then
+        if rg --quiet 'org query assertion fixture exceeded' target/contract-control/tests.log; then
+            # Same debug configuration and case; diagnostic output cannot admit a failed gate.
+            contract_diagnostic_status=0
+            {{ platform_env }} {{ platform_rust_flags }} ORGIZE_NATIVE_CONSUMER_CASE=lint_contract::lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget cargo test --locked --workspace --no-default-features --features "{{ features }},orgize/runtime-profile" --test integration_test consumer_fixture::explicit_startup_precedes_parallel_consumer_cases -- --exact --nocapture 2>&1 | tee target/contract-control/diagnostic.log || contract_diagnostic_status=$?
+            printf 'CONTRACT-DIAGNOSTIC original_exit=%s diagnostic_exit=%s (diagnostic only)\n' "$contract_test_status" "$contract_diagnostic_status"
+        fi
+        exit "$contract_test_status"
+    fi
     {{ platform_env }} {{ platform_rust_flags }} cargo bench --locked --workspace --no-default-features --features "{{ features }}" -- --test
 
 [private]

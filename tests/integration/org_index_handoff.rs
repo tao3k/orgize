@@ -33,15 +33,9 @@ fn explicit_startup_precedes_parallel_org_index_handoff_cases() {
     println!("startup-native suite=org_index_handoff concurrent-cases=23 complete OK");
 }
 
-use gerbil_parser_runtime::{
-    KindCategory, TreeEvent, parse_generated_events, project_syntax_graph,
-};
-use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
+use orgize::org_aot::{KindCategory, org_language_spec, parse_org_aot};
 #[path = "../support/org_graph.rs"]
 mod graph_support;
-
-const HANDOFF_TEST_DIGEST: &str =
-    "sha256:8b41c0fcb53588c81a44b83ec9e530bdb6125096637cba4934c96f7c2965abd6";
 
 fn org_scheme_event_aot_keeps_nested_description_urls_as_text() {
     let source = "go [[id:a][https://example.org]]\n";
@@ -153,8 +147,7 @@ fn org_scheme_context_algorithm_aot_masks_headlines_inside_source_blocks() {
         parsed.receipt().parser_digest,
         Some(orgize::org_aot::org_event_parser_digest())
     );
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme source-block fields project through Org Elements");
+    let records = parsed.records();
     let block = records
         .iter()
         .find(|record| record.kind == "src-block")
@@ -188,8 +181,7 @@ fn org_scheme_context_algorithm_aot_projects_paragraph_elements() {
     let parsed = parse_org_aot(source)
         .expect("Scheme paragraph transitions build a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme paragraphs project through the Org Element graph");
+    let records = parsed.records();
     let paragraphs: Vec<_> = records
         .iter()
         .filter(|record| record.kind == "paragraph")
@@ -206,8 +198,7 @@ fn org_scheme_context_algorithm_aot_projects_horizontal_rules() {
     let parsed = parse_org_aot(source)
         .expect("Scheme horizontal-rule events build a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("horizontal rule projects through the Org Element graph");
+    let records = parsed.records();
     let kinds: Vec<_> = records.iter().map(|record| record.kind).collect();
     assert_eq!(
         kinds,
@@ -222,8 +213,7 @@ fn org_scheme_context_algorithm_aot_projects_horizontal_rules() {
 
     let near_misses = "----\n----- x\n";
     let parsed = parse_org_aot(near_misses).expect("non-rules remain lossless paragraphs");
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("non-rules project through the Org Element graph");
+    let records = parsed.records();
     assert!(
         !records
             .iter()
@@ -236,8 +226,7 @@ fn org_scheme_context_algorithm_aot_groups_fixed_width_lines() {
     let parsed = parse_org_aot(source)
         .expect("Scheme fixed-width events build a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("fixed-width text projects through the Org Element graph");
+    let records = parsed.records();
     let kinds: Vec<_> = records.iter().map(|record| record.kind).collect();
     assert_eq!(kinds, ["org-data", "paragraph", "fixed-width", "paragraph"]);
     let fixed = records
@@ -254,8 +243,7 @@ fn org_scheme_context_algorithm_aot_groups_fixed_width_lines() {
     for (source, expected_value) in [(":", ""), (": ", ""), (":\n", "\n"), (": \n", "\n")] {
         let parsed = parse_org_aot(source).expect("empty fixed-width value remains lossless");
         assert_eq!(parsed.syntax().to_string(), source);
-        let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-            .expect("empty fixed-width value projects");
+        let records = parsed.records();
         let fixed = records
             .iter()
             .find(|record| record.kind == "fixed-width")
@@ -267,8 +255,7 @@ fn org_scheme_context_algorithm_aot_groups_fixed_width_lines() {
     let parsed = parse_org_aot(nested)
         .expect("fixed-width container closure and following properties stay lossless");
     assert_eq!(parsed.syntax().to_string(), nested);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("nested fixed-width text and property drawer project");
+    let records = parsed.records();
     let kinds: Vec<_> = records.iter().map(|record| record.kind).collect();
     assert!(kinds.contains(&"quote-block"));
     assert!(kinds.contains(&"fixed-width"));
@@ -280,8 +267,7 @@ fn org_scheme_context_algorithm_aot_recognizes_only_the_bare_readonly_marker() {
     let parsed = parse_org_aot(source)
         .expect("Scheme bare READONLY events build a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("bare READONLY projects through the Org Element graph");
+    let records = parsed.records();
     let keywords = records
         .iter()
         .filter(|record| record.kind == "keyword")
@@ -298,8 +284,7 @@ fn org_scheme_context_algorithm_projects_dynamic_keywords_for_todo_queries() {
     let parsed = parse_org_aot(source)
         .expect("Scheme key-line algorithm builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme keyed lines project through Org Elements");
+    let records = parsed.records();
     let keyword = records
         .iter()
         .find(|record| record.kind == "keyword")
@@ -325,8 +310,7 @@ fn org_scheme_context_algorithm_projects_declared_planning_and_clock() {
     let parsed = parse_org_aot(source)
         .expect("Scheme planning and clock algorithm builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("declared key lines project through Org Elements");
+    let records = parsed.records();
     let planning: Vec<_> = records
         .iter()
         .filter(|record| record.kind == "planning")
@@ -353,8 +337,7 @@ fn org_scheme_context_algorithm_projects_escaped_tables_and_rule_rows() {
     let parsed = parse_org_aot(source)
         .expect("Scheme table algorithm builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme table rows project through Org Elements");
+    let records = parsed.records();
     let table = records
         .iter()
         .find(|record| record.kind == "table")
@@ -390,12 +373,7 @@ fn org_scheme_context_algorithm_projects_escaped_tables_and_rule_rows() {
     let even_escape_source = "| a\\\\|b | c |\n";
     let even_escape_tree = parse_org_aot(even_escape_source)
         .expect("even backslash parity exposes the table separator");
-    let even_escape_records = project_syntax_graph(
-        org_language_spec(),
-        org_graph_spec(),
-        &even_escape_tree.syntax(),
-    )
-    .expect("even parity table cells project");
+    let even_escape_records = even_escape_tree.records();
     assert_eq!(
         even_escape_records
             .iter()
@@ -410,8 +388,7 @@ fn org_scheme_context_algorithm_projects_headline_property_drawers() {
     let parsed = parse_org_aot(source)
         .expect("Scheme drawer algorithm builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme property drawer projects through Org Elements");
+    let records = parsed.records();
     let headline = records
         .iter()
         .find(|record| record.kind == "headline")
@@ -453,8 +430,7 @@ fn org_scheme_context_algorithm_rejects_longer_block_marker_lookalikes() {
     let source = "#+begin_srcx\n* H\n:PROPERTIES:x\n:PROPERTIES:\n:ID: alpha\n:END: tail\n:END:\n";
     let parsed = parse_org_aot(source).expect("bounded Scheme markers preserve the source");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("bounded marker tree projects Elements");
+    let records = parsed.records();
     assert!(!records.iter().any(|record| record.kind == "src-block"));
     assert_eq!(
         records
@@ -479,8 +455,7 @@ fn org_scheme_context_algorithm_projects_poo_declared_opaque_blocks() {
     let parsed = parse_org_aot(source)
         .expect("Scheme opaque-block strategy builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme opaque-block strategy projects Org Elements");
+    let records = parsed.records();
     for kind in [
         "src-block",
         "example-block",
@@ -514,8 +489,7 @@ fn org_scheme_context_algorithm_aot_projects_nested_lists() {
         .expect("Scheme list strategy builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
 
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme nested lists project Org Elements");
+    let records = parsed.records();
     assert_eq!(
         records
             .iter()
@@ -538,8 +512,7 @@ fn org_scheme_context_list_boundaries_keep_headlines_and_marker_types_distinct()
     let source = "* H\n  * item\n\n\nnext\n1. a\n- b\n\t- c\n";
     let parsed = parse_org_aot(source).expect("mixed list boundaries remain lossless");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("mixed marker types project Elements");
+    let records = parsed.records();
     for (kind, expected) in [("headline", 1), ("plain-list", 4), ("item", 4)] {
         assert_eq!(
             records.iter().filter(|record| record.kind == kind).count(),
@@ -553,8 +526,7 @@ fn org_scheme_context_algorithm_aot_projects_recursive_containers() {
     let parsed = parse_org_aot(source)
         .expect("Scheme recursive containers build a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme containers project Org Elements");
+    let records = parsed.records();
     let quote = records
         .iter()
         .find(|record| record.kind == "quote-block")
@@ -580,8 +552,7 @@ fn org_scheme_context_algorithm_aot_projects_indented_properties() {
     let source = "* H\n  :PROPERTIES:\n  :ID: x\n  :END:\n";
     let parsed = parse_org_aot(source).expect("indented property drawer remains lossless");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("indented property projects as an Element");
+    let records = parsed.records();
     let property = records
         .iter()
         .find(|record| record.kind == "node-property")
@@ -594,8 +565,7 @@ fn org_scheme_context_algorithm_aot_keeps_nonidentifier_property_keys() {
     let source = "* H\n:PROPERTIES:\n:A+B: yes\n:END:\n";
     let parsed = parse_org_aot(source).expect("nonidentifier property key remains lossless");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("source-backed property projects as an Element");
+    let records = parsed.records();
     let property = records
         .iter()
         .find(|record| record.kind == "node-property")
@@ -618,8 +588,7 @@ fn executable_scheme_outline_events_reach_native_index_and_element_projection() 
     let parsed = orgize::Org::try_parse(source)
         .expect("native Scheme events satisfy native navigation's source and nesting contract");
     assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme events support Org Element projection");
+    let records = parsed.records();
     let headline_titles: Vec<_> = records
         .iter()
         .filter(|record| record.kind == "headline")
@@ -760,59 +729,13 @@ fn executable_scheme_outline_events_reach_native_index_and_element_projection() 
         .expect("Scheme-owned named drawer projects as an Element");
     assert_eq!(logbook.field("name"), Some("LOGBOOK"));
 
-    graph_support::assert_graph_integrity(source, &records);
-}
-
-macro_rules! org_event {
-    (start $name:literal) => {
-        TreeEvent::StartNode(kind($name, KindCategory::Node))
-    };
-    (token $name:literal, $start:expr, $end:expr) => {
-        TreeEvent::Token {
-            kind: kind($name, KindCategory::Token),
-            start: $start,
-            end: $end,
-        }
-    };
-    (finish) => {
-        TreeEvent::FinishNode
-    };
+    graph_support::assert_graph_integrity(source, records);
 }
 
 fn nested_org_events_reach_native_index_without_a_structural_engine_rule() {
     let source = "* Parent\n#+begin_src rust\nfn main() {}\n#+end_src\n** Child\n";
-    let block_start = source.find("#+begin_src").expect("source block opening");
-    let body_start = source.find("fn main()").expect("source block body");
-    let block_end = source.find("#+end_src").expect("source block closing");
-    let child_start = source.find("** Child").expect("child headline");
-    let events = [
-        org_event!(start "OrgFile"),
-        org_event!(start "OrgSection"),
-        org_event!(start "OrgHeadline"),
-        org_event!(token "HeadlineLine", 0, block_start),
-        org_event!(finish),
-        org_event!(start "OrgSourceBlock"),
-        org_event!(token "BlockBeginLine", block_start, body_start),
-        org_event!(token "TextLine", body_start, block_end),
-        org_event!(token "BlockEndLine", block_end, child_start),
-        org_event!(finish),
-        org_event!(start "OrgSection"),
-        org_event!(start "OrgHeadline"),
-        org_event!(token "HeadlineLine", child_start, source.len()),
-        org_event!(finish),
-        org_event!(finish),
-        org_event!(finish),
-        org_event!(finish),
-    ];
-    let parsed = parse_generated_events(org_language_spec(), HANDOFF_TEST_DIGEST, source, &events)
-        .expect("Org event stream satisfies the generic native navigation contract");
-
+    let parsed = parse_org_aot(source).expect("the Scheme Fold publishes this document");
     assert_eq!(parsed.syntax().to_string(), source);
-    assert_eq!(parsed.receipt().parser_digest, Some(HANDOFF_TEST_DIGEST));
-    assert_eq!(
-        parsed.selective_glr_receipt().winner_reason,
-        "scheme-aot-events"
-    );
     let sections: Vec<_> = parsed
         .syntax()
         .descendants()

@@ -10,12 +10,13 @@ pub(crate) fn decode_batch(bytes: &[u8]) -> Result<([u64; 6], &[u8]), String> {
     Ok((fields, &bytes[52..]))
 }
 
-pub(super) fn decode(bytes: &[u8]) -> Result<(u64, u64, u64, &[u8]), String> {
-    if bytes.len() < 32 || &bytes[..4] != b"OPR1" || &bytes[28..32] != b"OEV1" {
+pub(super) fn decode(bytes: &[u8]) -> Result<([u64; 4], &[u8]), String> {
+    if bytes.len() < 40 || &bytes[..4] != b"OPR2" || &bytes[36..40] != b"ODV1" {
         return Err("invalid native diagnostic envelope".into());
     }
-    let fold = u64::from_le_bytes(bytes[4..12].try_into().unwrap());
-    let tape = u64::from_le_bytes(bytes[12..20].try_into().unwrap());
-    let cpu = u64::from_le_bytes(bytes[20..28].try_into().unwrap());
-    Ok((fold, tape, cpu, &bytes[28..]))
+    let fields = std::array::from_fn(|index| {
+        let start = 4 + 8 * index;
+        u64::from_le_bytes(bytes[start..start + 8].try_into().unwrap())
+    });
+    Ok((fields, &bytes[36..]))
 }

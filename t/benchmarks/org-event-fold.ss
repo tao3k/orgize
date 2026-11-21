@@ -4,7 +4,7 @@
         (only-in :asp-gerbil-scheme/benchmark-api
                  benchmark-run/result benchmark-receipt-pass?
                  benchmark-fixture-contract-pass?)
-        (only-in :gerbil-parser/artifact-support sha256-text)
+        (only-in :gerbil-parser/execution/artifact sha256-text)
         (only-in :orgize/languages/org/modules/org-parser/event-runtime parse-org-native-events)
         (only-in "../org-parser-test-support.ss" org-events-cover-source?))
 (export main)

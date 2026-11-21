@@ -213,7 +213,7 @@ in this slice, and wheel qualification remains open.
 The isolated latest-revision parser package build succeeded and its checkout
 remained clean. The first fresh Orgize build exposed the removed internal
 =deflanguage-parser= entry in Contract and expectation parsers. Both now import
-the public =:gerbil-parser/language-support= =deflanguage-parser-loader= macro.
+the public =:gerbil-parser/language-support/interface= =deflanguage-parser-loader= macro.
 No legacy compatibility entry was added. The fresh Orgize runtime/parser
 build then succeeded with the maintained 12-core build owner.
 

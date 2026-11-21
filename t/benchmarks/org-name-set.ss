@@ -1,7 +1,7 @@
 #!/usr/bin/env gxi
 (import (only-in :asp-gerbil-scheme/benchmark-api
                  benchmark-run/result benchmark-receipt-pass?)
-        (only-in :gerbil-parser/rust-runtime-event-support run-event-fold)
+        (only-in :gerbil-parser/language-support/event-fold/run run-event-fold)
         (only-in :orgize/languages/org/modules/org-parser/entity-names
                  org-entity-names))
 (export main name-set-fold)

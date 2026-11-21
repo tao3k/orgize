@@ -102,7 +102,7 @@ pub fn write_org_program() {
                 "orgize/bindings/c/orgize-scheme-runtime",
                 "orgize/bindings/c/event-tape",
                 "orgize-fold/parse-org-compiled-inline-events",
-                "orgize-fold/parse-org-compiled-tape",
+                "orgize-fold/parse-org-compiled-product",
             ],
             forbidden_modules: &[
                 "gerbil-parser/src/compiler/event-fold-runtime",

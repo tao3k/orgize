@@ -1,6 +1,6 @@
 //! Scheme-declared ordinary Org drawer through the generic native navigation block engine.
 
-use gerbil_parser_runtime::{SyntaxNode, SyntaxToken};
+use orgize::{SyntaxNode, SyntaxToken};
 
 fn parse(source: &str) -> SyntaxNode {
     orgize::org_aot::parse_org_aot(source)

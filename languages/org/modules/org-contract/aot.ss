@@ -1,10 +1,10 @@
 ;;; -*- Gerbil -*-
 ;;; Private AOT projection of admitted Scheme/POO contracts to Rust values.
 
-(import (only-in :gerbil-parser/rust-syntax-support
+(import (only-in :gerbil-parser/language-support/rust/syntax
                  rust-struct rust-static rust-array rust-some rust-none
                  rust-number rust-string rust-identifier rust-render)
-        (only-in :gerbil-parser/graph-projection-support
+        (only-in :gerbil-parser/graph-support/projection
                  graph-projection-digest)
         (only-in :orgize/languages/org/modules/org-parser/grammar org-mode-language-grammar)
         (only-in :orgize/languages/org/modules/org-elements/graph org-graph-projection)

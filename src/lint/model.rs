@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use gerbil_parser_runtime::TextRange;
+use crate::TextRange;
 
 use crate::ast::{OrgContractRegistry, PriorityProfile, PropertySchemaRegistry, SourcePosition};
 

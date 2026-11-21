@@ -2,13 +2,16 @@
 
 use std::collections::HashMap;
 
-use gerbil_parser_runtime::GraphRecord;
+use crate::GraphRecord;
 
 pub(super) fn project(records: &[GraphRecord], source: &str) -> HashMap<usize, Vec<usize>> {
     let keywords = records
         .iter()
         .filter(|record| record.kind == "keyword")
         .collect::<Vec<_>>();
+    if keywords.is_empty() {
+        return HashMap::new();
+    }
     let names = crate::config::org_affiliated_keyword_names();
     let mut fields = vec![names.len().to_string()];
     fields.extend(names.iter().map(|name| (*name).to_owned()));
@@ -62,3 +65,7 @@ pub(super) fn project(records: &[GraphRecord], source: &str) -> HashMap<usize, V
     }
     by_target
 }
+
+#[cfg(test)]
+#[path = "../tests/unit/org_aot_affiliation.rs"]
+mod tests;

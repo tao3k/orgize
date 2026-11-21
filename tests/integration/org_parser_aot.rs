@@ -1,6 +1,6 @@
-//! Scheme POO declaration -> gerbil-parser AOT table -> contextual native navigation index.
+//! Navigation and Element data emitted by the Scheme Fold.
 
-use gerbil_parser_runtime::SyntaxNode;
+use orgize::SyntaxNode;
 
 fn parse(source: &str) -> SyntaxNode {
     let parsed = orgize::org_aot::parse_org_aot(source)
@@ -21,7 +21,7 @@ fn name(node: &SyntaxNode) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(node.kind().0)].name
 }
 
-fn token_name(token: &gerbil_parser_runtime::SyntaxToken) -> &'static str {
+fn token_name(token: &orgize::SyntaxToken) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
@@ -226,7 +226,8 @@ fn scheme_declared_table_builds_rows_and_cells_without_paragraph_claims() {
 
 fn scheme_declared_greater_blocks_keep_distinct_element_kinds_and_export_backend() {
     let source = "* Blocks\n#+begin_quote\nquoted\n#+end_quote\n#+begin_example\nliteral\n#+end_example\n#+begin_verse\nverse\n#+end_verse\n#+begin_center\ncentered\n#+end_center\n#+begin_comment\nhidden\n#+end_comment\n#+begin_export html\n<b>raw</b>\n#+end_export\nAfter\n";
-    let root = parse(source);
+    let document = orgize::Org::try_parse(source).expect("Scheme document product");
+    let root = document.syntax();
     assert_eq!(root.to_string(), source);
     let expected = [
         ("OrgQuoteBlock", "quote-block"),
@@ -295,7 +296,8 @@ fn unmatched_greater_block_does_not_swallow_following_headline() {
 
 fn recursive_greater_blocks_project_inner_elements_but_literal_blocks_do_not() {
     let source = "* Task\n#+begin_quote\n[[id:inside]]\n| a | b |\n#+begin_example\n[[id:literal]]\n#+end_example\n#+end_quote\n#+begin_verse\n[[id:verse]]\n#+end_verse\n#+begin_center\n[[id:center]]\n#+end_center\n";
-    let root = parse(source);
+    let document = orgize::Org::try_parse(source).expect("Scheme document product");
+    let root = document.syntax();
     assert_eq!(root.to_string(), source);
     let quote = root
         .descendants()
@@ -322,12 +324,7 @@ fn recursive_greater_blocks_project_inner_elements_but_literal_blocks_do_not() {
             .count(),
         1
     );
-    let records = gerbil_parser_runtime::project_syntax_graph(
-        orgize::org_aot::org_language_spec(),
-        orgize::org_aot::org_graph_spec(),
-        &root,
-    )
-    .expect("nested Element graph follows recursive block ancestry");
+    let records = document.records();
     let quote_record = records
         .iter()
         .find(|record| record.kind == "quote-block")
@@ -399,7 +396,8 @@ fn many_sibling_sections_keep_exact_source_order() {
 
 fn git_tracked_org_document_is_lossless_at_the_current_structural_boundary() {
     let source = include_str!("../fixtures/org-elements/representative.org");
-    let root = parse(source);
+    let document = orgize::Org::try_parse(source).expect("Scheme document product");
+    let root = document.syntax();
     assert_eq!(root.to_string(), source);
     assert_eq!(
         root.descendants()
@@ -417,7 +415,8 @@ fn git_tracked_org_document_is_lossless_at_the_current_structural_boundary() {
 
 fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
     let source = include_str!("../fixtures/org-elements/representative.org");
-    let root = parse(source);
+    let document = orgize::Org::try_parse(source).expect("Scheme document product");
+    let root = document.syntax();
     let lists: Vec<_> = root
         .descendants()
         .filter(|node| name(node) == "OrgPlainList")
@@ -441,12 +440,7 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
             item.to_string()
         );
     }
-    let records = gerbil_parser_runtime::project_syntax_graph(
-        orgize::org_aot::org_language_spec(),
-        orgize::org_aot::org_graph_spec(),
-        &root,
-    )
-    .expect("list projection uses Scheme-owned Element kinds");
+    let records = document.records();
     let list = records
         .iter()
         .find(|record| record.kind == "plain-list")
@@ -465,7 +459,8 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
 
 fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
     let source = "#+TITLE: α fixture\n* Task\nSCHEDULED: <2026-09-24 Thu> DEADLINE: <2026-09-25 Fri>\nBody\nSCHEDULED: ordinary prose\n#+begin_src text\nliteral\n#+end_src\n";
-    let root = parse(source);
+    let document = orgize::Org::try_parse(source).expect("Scheme document product");
+    let root = document.syntax();
     assert_eq!(root.to_string(), source);
     let planning: Vec<_> = root
         .descendants()
@@ -730,7 +725,8 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
 
 fn invalid_property_drawer_recovers_without_claiming_node_properties() {
     let source = "* Task\n:PROPERTIES:\nnot a property\n:END:\n** Next\n";
-    let root = parse(source);
+    let document = orgize::Org::try_parse(source).expect("Scheme document product");
+    let root = document.syntax();
     assert_eq!(root.to_string(), source);
     assert_eq!(
         root.descendants()
@@ -769,13 +765,9 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
     ];
     for (source, expected_records, expected_blocks, expected_links, expected_paragraphs) in fixtures
     {
-        let root = parse(source);
-        let records = gerbil_parser_runtime::project_syntax_graph(
-            orgize::org_aot::org_language_spec(),
-            orgize::org_aot::org_graph_spec(),
-            &root,
-        )
-        .expect("Scheme AOT graph rule must match the same grammar");
+        let document = orgize::Org::try_parse(source).expect("Scheme document product");
+        let root = document.syntax();
+        let records = document.records();
         assert_eq!(records.len(), expected_records);
         assert_eq!(records[0].kind, "org-data");
         assert_eq!(records[0].parent_id, None);
@@ -807,7 +799,7 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
                 .count(),
             expected_paragraphs
         );
-        for record in &records {
+        for record in records {
             assert_eq!(records[record.id].id, record.id);
             if let Some(parent_id) = record.parent_id {
                 assert!(records[parent_id].child_ids.contains(&record.id));

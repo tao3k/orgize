@@ -3,10 +3,7 @@
 use std::hint::black_box;
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use gerbil_parser_runtime::project_syntax_graph;
-use orgize::org_aot::{
-    org_graph_spec, org_language_spec, parse_org_aot, parse_org_aot_with_config,
-};
+use orgize::org_aot::{parse_org_aot, parse_org_aot_with_config};
 use orgize::{Org, ParseConfig};
 
 fn task_source(with_directive: bool) -> String {
@@ -104,9 +101,8 @@ fn bench_org_element_query(c: &mut Criterion) {
     });
     group.finish();
 
-    let parsed = parse_org_aot(&source).expect("Scheme AOT benchmark events satisfy Rowan");
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme AOT benchmark events project Elements");
+    let parsed = parse_org_aot(&source).expect("Scheme Fold publishes the benchmark document");
+    let records = parsed.records();
     assert_eq!(
         records
             .iter()
@@ -130,7 +126,7 @@ fn bench_org_element_query(c: &mut Criterion) {
     });
     let inline_objects = "~code~ =verbatim=\n".repeat(10_000);
     let inline_records = orgize::org_aot::parse_org_aot(&inline_objects)
-        .expect("inline benchmark source builds a Rowan document");
+        .expect("Scheme Fold publishes the inline benchmark document");
     assert_eq!(
         inline_records
             .records()
@@ -246,8 +242,7 @@ fn bench_org_table_rows(c: &mut Criterion) {
     let source = table_source();
     let structural = parse_org_aot(&source).expect("structural table benchmark parses");
     let parsed = parse_org_aot(&source).expect("Scheme table benchmark events satisfy Rowan");
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme table benchmark projects Elements");
+    let records = parsed.records();
     for (kind, expected) in [("table", 1), ("table-row", 10_000), ("table-cell", 40_000)] {
         assert_eq!(
             structural
@@ -416,8 +411,7 @@ fn bench_org_nested_lists(c: &mut Criterion) {
     let source = list_source();
     let structural = parse_org_aot(&source).expect("structural list benchmark parses");
     let parsed = parse_org_aot(&source).expect("Scheme list benchmark events satisfy Rowan");
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme list benchmark projects Elements");
+    let records = parsed.records();
     for (kind, expected) in [("plain-list", 2_501), ("item", 10_000)] {
         assert_eq!(
             structural
