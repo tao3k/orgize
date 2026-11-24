@@ -1,4 +1,4 @@
 (package: orgize
  prelude: :tao3k/parser/prelude
- depend: ("github.com/tao3k/gerbil-parser@cbc7917bbaaa7911aa283e85be7f2c9cf99bc5d6"
+ depend: ("github.com/tao3k/gerbil-parser@8a01db902df4fa110b9fa99e8b0d620e29610134"
           "github.com/tao3k/gebril-yuanxu@v0.1.1"))

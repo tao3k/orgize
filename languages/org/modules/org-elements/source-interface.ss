@@ -4,5 +4,7 @@
 
 ;;; Source-backed projection is separate from the parser-independent graph
 ;;; query runtime to keep existing callers free of parser initialization.
-(import "source-headlines.ss" "source-graph.ss")
-(export (import: "source-headlines.ss") (import: "source-graph.ss"))
+(import "source-headlines.ss" "source-graph.ss" "view-helpers.ss")
+(export (import: "source-headlines.ss")
+        (import: "source-graph.ss")
+        (import: "view-helpers.ss"))

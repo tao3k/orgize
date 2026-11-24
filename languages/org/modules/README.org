@@ -5,10 +5,14 @@
 The Scheme modules in this directory own the Org language boundary.  Their
 source is the Org document and its syntax, not an application category such as
 "AI Memory".  =org-parser= recognizes source events, =org-elements= owns
-Element/Object meaning and document-local queries, and =org-contract= records
-the source contract used by generated projections.  The current directory has
-those three modules; the capabilities below are an implementation map, not a
-claim that every listed projection is already Scheme-complete.
+Element/Object meaning and document-local queries (including =property:*= and
+headline structural projections), =org-edit= owns parser-span-backed structural
+rewriting (consuming =:gerbil-parser/graph-support/edit= =SpanEdit= algebra and
+fail-closed re-parse verification), and =org-contract= records the source
+contract used by generated projections.  Downstream domain modules (such as
+=agentic-ai-lab= =durable/+org= and =ai-agentic-context=) must project and
+mutate Org documents strictly through =org-elements= and =org-edit=, never via
+ad hoc string splitting or =:END:= slicing.
 
 The Org and Emacs package ecosystem is comparison evidence for what a user can
 do with the same document.  We should preserve its useful composability without
