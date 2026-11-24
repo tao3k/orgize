@@ -2,9 +2,9 @@
 ;;; Exact native AST contract for the Org-owned expression grammar.
 
 (import (only-in :std/test check test-case test-suite)
-        (only-in :gerbil-parser/artifact-support
+        (only-in :gerbil-parser/execution/artifact
                  parse-artifact-roundtrip parse-artifact-success?)
-        (only-in :gerbil-parser/language-test-support check-parser-ast)
+        (only-in :gerbil-parser/language-support/testing check-parser-ast)
         (only-in "../languages/org/modules/org-contract/parser.ss" parse-org-contract-expression))
 (export org-contract-parser-test)
 

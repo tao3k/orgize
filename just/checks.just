@@ -12,8 +12,8 @@ dependency-check:
     ! rg --fixed-strings --quiet 'rowan.build' src tests benches just/benchmark.just
     ! rg --quiet 'rowan-event|org-rowan|parse-org-rowan-events|rowan_admission' src languages bindings t tests build.ss
     ! rg --quiet '\b[Rr]owan\b' src languages bindings t tests --glob '!*.snap'
-    rg --fixed-strings --quiet 'gerbil-parser-runtime = { git = "https://github.com/tao3k/gerbil-parser", tag = "{{ parser_tag }}"' Cargo.toml
-    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ parser_tag }}' gerbil.pkg
+    ! rg --quiet 'gerbil-parser-(runtime|artifact)|git\+https://github.com/tao3k/gerbil-parser' Cargo.toml Cargo.lock fuzz/Cargo.lock
+    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ parser_revision }}' gerbil.pkg
     @echo 'ROWAN-FREE-DEPENDENCIES-OK: native view cutover is a separate gate'
 
 # Bounded native migration records and implementation owner checklists.
@@ -37,11 +37,11 @@ platform-command-check output:
     rg --fixed-strings --quiet -- '-- -C linker=/usr/bin/cc -C link-arg=-Wl,-ld_classic' "{{ output }}/macos-python.log"
     ! rg --quiet 'SDKROOT|APPLE_DARWIN|/usr/bin/cc|-Wl,' "{{ output }}/linux-scheme.log" "{{ output }}/linux-clock.log" "{{ output }}/linux-service.log" "{{ output }}/linux-queue.log" "{{ output }}/linux-rust.log" "{{ output }}/linux-python.log"
 
-# Check the resolved Release source and both Cargo lockfiles.
+# Check the Scheme package manager’s resolved Parser source.
 [private]
-parser-release-check source tag:
-    revision=$(git -C '{{ source }}' rev-parse HEAD); for lock in Cargo.lock fuzz/Cargo.lock; do test "$(rg -c --fixed-strings "git+https://github.com/tao3k/gerbil-parser?tag={{ tag }}#$revision" "$lock")" -eq 2; done
-    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ tag }}' gerbil.pkg
+parser-revision-check source revision:
+    test "$(git -C '{{ source }}' rev-parse HEAD)" = "{{ revision }}"
+    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ revision }}' gerbil.pkg
     git -C "{{ source }}" diff --check
     git -C "{{ source }}" diff --quiet
     git -C "{{ source }}" diff --cached --quiet
@@ -55,6 +55,7 @@ parser-program-source-check manifest parser_output org_output program_output bri
     jq --exit-status --arg parser "{{ parser_output }}/lib/static/" --arg org "{{ org_output }}/lib/static/" --arg stage "{{ program_output }}/lib/static/" --arg bridge "{{ bridge_output }}/lib/static/" '.schema == "gerbil-scheme-rust.aot-program.v1" and ([.modules[] | select(.module | startswith("gerbil-parser/"))] | length > 0) and ([.modules[] | select(.module | startswith("orgize/"))] | length > 0) and ([.modules[] | select(.module | startswith("gerbil-scheme-rust/"))] | length > 0) and all(.modules[]; if (.module | startswith("gerbil-parser/")) then (.scm | startswith($parser)) elif (.module | startswith("gerbil-scheme-rust/")) then (.scm | startswith($bridge)) elif (.module == "orgize/languages/org/modules/org-parser/clock" or .module == "orgize/languages/org/modules/org-parser/runtime-statistics" or .module == "orgize/bindings/c/event-tape") then (.scm | startswith($stage)) elif (.module | startswith("orgize/") or startswith("orgize-fold/")) then (.scm | startswith($org)) else true end)' "{{ manifest }}"
     jq --exit-status 'all(.modules[]; .module != "gerbil-parser/src/api" and .module != "orgize/languages/org/modules/org-elements/runtime-interface" and .module != "orgize/languages/org/modules/org-contract/runtime-interface")' "{{ manifest }}"
     jq --exit-status 'all(.modules[]; .module | test("^orgize/t/benchmarks/|^asp-gerbil-scheme/") | not)' "{{ manifest }}"
+    jq --exit-status 'all(.modules[] | select(.deferred != true); .module != "gerbil-parser/src/compiler/graph-projection-runtime" and .module != "gerbil-parser/src/compiler/fold-graph-catalog")' "{{ manifest }}"
 
 [private]
 parser-program-source-negative-check previous parser_output org_output program_output bridge_output:
@@ -64,7 +65,7 @@ parser-program-source-negative-check previous parser_output org_output program_o
 [group('checks')]
 alignment-dependency-check parser_source bridge_source:
     just task-layout-check
-    just parser-release-check "{{ parser_source }}" "{{ parser_tag }}"
+    just parser-revision-check "{{ parser_source }}" "{{ parser_revision }}"
     test "$(git -C '{{ bridge_source }}' rev-parse HEAD)" = "{{ bridge_revision }}"
     git -C "{{ bridge_source }}" diff --check
     git -C "{{ bridge_source }}" diff --quiet
@@ -90,7 +91,7 @@ owner-lifecycle-check source gsc:
 
 [private]
 runtime-inner-stage-scale-check receipt: (runtime-profile-scale-check receipt)
-    jq --exit-status 'all(.[]; .stage_timings_ns | has("fold.service") and has("event_tape.encode") and has("fold.thread_cpu"))' "{{ receipt }}"
+    jq --exit-status 'all(.[]; .stage_timings_ns | has("fold.service") and has("product.encode") and has("fold.thread_cpu"))' "{{ receipt }}"
 
 # Reject the audited production-library warning group, not dependency/linker warnings.
 [private]

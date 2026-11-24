@@ -7,16 +7,30 @@
         (only-in :std/string/misc string-trim)
         (only-in :orgize/languages/org/modules/org-parser/event-runtime parse-org-native-events)
         (only-in "graph-shape.ss" org-graph-shape)
-        (only-in :gerbil-parser/graph-projection-support graph-node-syntax-kind graph-node-label graph-node-fields
+        (only-in :gerbil-parser/graph-support/values graph-node-syntax-kind graph-node-label graph-node-fields
                  graph-field-token graph-field-name graph-field-mode)
         (only-in "values.ss" make-org-element-graph-view)
         (only-in "headline-properties.ss" org-element-with-headline-properties))
-(export org-source-element-graph org-source-element-field)
+(export org-source-element-graph
+        org-source-element-graph/todo-profile
+        org-source-element-field)
 
 (def (org-source-element-field record name)
   (hash-get (.ref record 'fields) name))
 
+(def (count-leading-stars markers)
+  (if (not (string? markers))
+    1
+    (let ((len (string-length markers)))
+      (let loop ((i 0))
+        (if (and (< i len) (char=? (string-ref markers i) #\*))
+          (loop (+ i 1))
+          (max 1 i))))))
+
 (def (org-source-element-graph source)
+  (org-source-element-graph/todo-profile source '("TODO") '("DONE")))
+
+(def (org-source-element-graph/todo-profile source configured-todo configured-done)
   (unless (string? source) (error "Org graph requires source text"))
   (let* ((bytes (string->utf8 source)) (size (u8vector-length bytes))
          (rules (make-hash-table)) (stack '()) (records '())
@@ -107,6 +121,9 @@
                     (when (hash-get owner-fields name)
                       (error "duplicate Org property" key))
                     (hash-put! owner-fields name (string-trim value))))))
+            (when (memq kind '(OrgSection OrgInlinetask))
+              (hash-put! fields-value "level"
+                         (count-leading-stars (hash-get fields-value "markers"))))
             (when rule
               (set! records
                     (cons (.o id: id-value parent: parent-value
@@ -117,9 +134,12 @@
      (parse-org-native-events source))
     (unless (and (= roots 1) (null? stack) (= size offset))
       (error "incomplete Org source coverage"))
-    (org-element-with-headline-properties (make-org-element-graph-view
-     (reverse records)
-     (lambda (record) (.ref record 'id))
-     (lambda (record) (.ref record 'parent))
-     (lambda (record) (.ref record 'kind))
-     org-source-element-field))))
+    (org-element-with-headline-properties
+     (make-org-element-graph-view
+      (reverse records)
+      (lambda (record) (.ref record 'id))
+      (lambda (record) (.ref record 'parent))
+      (lambda (record) (.ref record 'kind))
+      org-source-element-field)
+     configured-todo
+     configured-done)))

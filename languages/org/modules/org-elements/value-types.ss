@@ -1,11 +1,11 @@
 ;;; Org fields use native Records; only catalog and predicate bounds are Org policy.
 (import (only-in :clan/poo/object .ref)
-        (only-in :clan/poo/mop define-type Type. element? Any Bool Fun)
-        (only-in :clan/poo/type Record String List Exactly Enum Or OrFalse)
+        (only-in :clan/poo/type define-type Type. element? Any Bool Fun
+                 Record String List Exactly Enum Or OrFalse)
         (only-in :clan/poo/number UInt)
         (only-in :std/list/list every)
-        (only-in :gerbil-parser/graph-query-support GraphQueryViewContract graph-query-context?)
-        (only-in :gerbil-parser/graph-projection-support
+        (only-in :gerbil-parser/graph-support/query GraphQueryViewContract graph-query-context?)
+        (only-in :gerbil-parser/graph-support/values
                  graph-node-label graph-node-fields graph-field-name)
         (only-in "graph-shape.ss" org-graph-shape org-headline-extra-fields))
 (export OrgElementRow OrgElementId OrgElementKind
@@ -69,11 +69,20 @@
      ((equal? label (graph-node-label (car rules))) (car rules))
      (else (loop (cdr rules))))))
 
+(def (org-property-field-name? name)
+  (and (string? name)
+       (> (string-length name) 9)
+       (string=? (substring name 0 9) "property:")))
+
 (def (org-element-field? rule name)
   (and rule
        (or (and (member (graph-node-label rule)
                         '("headline" "inlinetask"))
-                (member name org-headline-extra-fields))
+                (or (member name org-headline-extra-fields)
+                    (equal? name "level")))
+           (and (member (graph-node-label rule)
+                        '("headline" "inlinetask" "org-data"))
+                (org-property-field-name? name))
            (let loop ((fields (graph-node-fields rule)))
              (cond
               ((null? fields) #f)

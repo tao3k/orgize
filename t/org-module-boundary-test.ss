@@ -74,11 +74,11 @@
           (check-equal? (and (string-contains output "CONSUMER-ISOLATED-OK") #t) #t))
         '((:orgize/languages/org/modules/org-parser/macro-funs
            "orgize-fold/parse-org-compiled-inline-events~0"
-           ("orgize-fold/parse-org-compiled-events~0" "orgize-fold/parse-org-compiled-tape~0"))
+           ("orgize-fold/parse-org-compiled-events~0" "orgize-fold/parse-org-compiled-product~0"))
           (:orgize/languages/org/modules/org-parser/event-runtime
            "orgize-fold/parse-org-compiled-events~0"
-           ("orgize-fold/parse-org-compiled-inline-events~0" "orgize-fold/parse-org-compiled-tape~0"))
+           ("orgize-fold/parse-org-compiled-inline-events~0" "orgize-fold/parse-org-compiled-product~0"))
           (:orgize/bindings/c/event-tape
-           "orgize-fold/parse-org-compiled-tape~0"
+           "orgize-fold/parse-org-compiled-product~0"
            ("orgize-fold/parse-org-compiled-events~0")))))
 ))

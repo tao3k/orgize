@@ -3,7 +3,7 @@ use super::records::{
     file_matches_options, memory_search_record_matches_options, memory_search_root,
 };
 use super::{OrgMemorySearchOptions, OrgMemorySearchRecord};
-use crate::document::elements::{bounded_org_batch_len, load_sources};
+use crate::document::elements::{DocumentSource, bounded_org_batch_len, load_sources};
 use crate::org_aot::{
     PlanLedgerHeadline, parse_org_aot, parse_plan_ledger_batch, plan_ledger_headline,
 };
@@ -19,7 +19,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     thread,
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 pub(super) fn query_plan_ledger_records(
@@ -27,13 +27,12 @@ pub(super) fn query_plan_ledger_records(
     walk_config: &DocumentWalkConfig,
     options: &OrgMemorySearchOptions,
 ) -> Result<Vec<OrgMemorySearchRecord>, String> {
-    let started = std::time::Instant::now();
+    let started = Instant::now();
     let root = memory_search_root(root, options);
     let mut files = Vec::new();
     collect_plan_ledger_paths(&root, walk_config, options, &mut files)?;
     let walk_elapsed = started.elapsed();
-    let work = plan_ledger_records_from_paths(&files, options)?;
-    let mut records = work.records;
+    let mut records = plan_ledger_records_from_paths(&files, options)?;
     let projection_elapsed = started.elapsed() - walk_elapsed;
     records.sort_by(|left, right| {
         left.path
@@ -43,17 +42,10 @@ pub(super) fn query_plan_ledger_records(
     if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER").is_some()
         || std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER_STAGES").is_some()
     {
-        #[cfg(feature = "runtime-profile")]
-        if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER_STAGES").is_some() {
-            eprintln!(
-                "plan ledger worker sums: diagnostic only, overlapping stages, ns except native count metrics; {:?}",
-                work.timings
-            );
-        }
         eprintln!(
-            "plan ledger stages: files={} workers={} walk={walk_elapsed:?} projection={projection_elapsed:?} total={:?}",
+            "plan ledger stages: files={} reader_threads={} walk={walk_elapsed:?} projection={projection_elapsed:?} total={:?}",
             files.len(),
-            plan_ledger_worker_count(files.len()),
+            usize::from(files.len() >= crate::org_aot::BATCH_MAX_DOCUMENTS),
             started.elapsed()
         );
     }
@@ -101,124 +93,64 @@ fn collect_plan_ledger_paths(
     Ok(())
 }
 
-struct PlanLedgerWork {
-    records: Vec<OrgMemorySearchRecord>,
-    #[cfg(feature = "runtime-profile")]
-    timings: BTreeMap<&'static str, u64>,
-}
-
-impl PlanLedgerWork {
-    fn new(records: Vec<OrgMemorySearchRecord>) -> Self {
-        Self {
-            records,
-            #[cfg(feature = "runtime-profile")]
-            timings: BTreeMap::new(),
-        }
-    }
-}
-
-fn observe_plan_ledger_files(
-    paths: &[PathBuf],
-    options: &OrgMemorySearchOptions,
-) -> Result<PlanLedgerWork, String> {
-    #[cfg(feature = "runtime-profile")]
-    if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER_STAGES").is_some()
-        && !crate::runtime_profile::is_active()
-    {
-        let (records, timings) =
-            crate::runtime_profile::measure(|| collect_plan_ledger_files(paths, options));
-        return records.map(|records| PlanLedgerWork { records, timings });
-    }
-    collect_plan_ledger_files(paths, options).map(PlanLedgerWork::new)
-}
-
 fn plan_ledger_records_from_paths(
     paths: &[PathBuf],
     options: &OrgMemorySearchOptions,
-) -> Result<PlanLedgerWork, String> {
-    if paths.len() < 64 {
-        return observe_plan_ledger_files(paths, options);
+) -> Result<Vec<OrgMemorySearchRecord>, String> {
+    let chunks = paths.chunks(crate::org_aot::BATCH_MAX_DOCUMENTS);
+    if paths.len() < crate::org_aot::BATCH_MAX_DOCUMENTS {
+        return collect_plan_ledger_batches(chunks.map(load_plan_ledger_sources), options);
     }
 
-    // Reading independent files can overlap while the Scheme-AOT graph for
-    // each file is built. Bound workers by the work available, not a fixed
-    // machine-wide cap, and keep each worker's chunk large enough to amortize
-    // thread startup.
-    let worker_count = plan_ledger_worker_count(paths.len());
-    // Distribute whole wire-sized groups. Splitting by file count can force
-    // each worker to send an extra partial batch to the same VM owner.
-    let batch_width = crate::org_aot::BATCH_MAX_DOCUMENTS;
-    let batch_count = paths.len().div_ceil(batch_width);
+    // One bounded reader overlaps file I/O with the existing Scheme owner.
+    // Rendezvous retains at most the current and next source batch; waiting
+    // native requests cannot multiply file readers or their retained inputs.
     let profiled = crate::runtime_profile::is_active();
     thread::scope(|scope| {
-        let mut handles = Vec::with_capacity(worker_count);
-        let mut start = 0;
-        for worker in 0..worker_count {
-            let batches =
-                batch_count / worker_count + usize::from(worker < batch_count % worker_count);
-            let end = start + (paths.len() - start).min(batches.saturating_mul(batch_width));
-            let chunk = &paths[start..end];
-            start = end;
-            handles.push(scope.spawn(move || {
-                crate::runtime_profile::worker(profiled, || {
-                    observe_plan_ledger_files(chunk, options)
-                })
-            }));
-        }
-
-        let mut combined = PlanLedgerWork::new(Vec::new());
-        for handle in handles {
-            let work = handle
-                .join()
-                .map_err(|_| "plan ledger worker panicked".to_string())?
-                .receive()?;
-            combined.records.extend(work.records);
-            #[cfg(feature = "runtime-profile")]
-            for (stage, nanos) in work.timings {
-                *combined.timings.entry(stage).or_default() += nanos;
-            }
-        }
-        Ok(combined)
+        let (sender, receiver) = std::sync::mpsc::sync_channel(0);
+        let reader = scope.spawn(move || {
+            crate::runtime_profile::worker(profiled, || {
+                for chunk in chunks {
+                    let sources = load_plan_ledger_sources(chunk);
+                    let failed = sources.is_err();
+                    if sender.send(sources).is_err() || failed {
+                        break;
+                    }
+                }
+            })
+        });
+        let result = collect_plan_ledger_batches(receiver.iter(), options);
+        // A parser error must disconnect a reader blocked on its next handoff
+        // before the scope joins it.
+        drop(receiver);
+        reader
+            .join()
+            .map_err(|_| "plan ledger source reader panicked".to_string())?
+            .receive();
+        result
     })
 }
 
-fn plan_ledger_worker_count(path_count: usize) -> usize {
-    if path_count < 64 {
-        return 1;
-    }
-    thread::available_parallelism()
-        .map(|count| count.get())
-        .unwrap_or(1)
-        .saturating_mul(8)
-        .min(path_count.div_ceil(64))
+fn load_plan_ledger_sources(paths: &[PathBuf]) -> Result<Vec<DocumentSource>, String> {
+    crate::runtime_profile::stage("plan_ledger.source_read", || load_sources(paths))
 }
 
-fn collect_plan_ledger_files(
-    paths: &[PathBuf],
+fn collect_plan_ledger_batches(
+    batches: impl IntoIterator<Item = Result<Vec<DocumentSource>, String>>,
     options: &OrgMemorySearchOptions,
 ) -> Result<Vec<OrgMemorySearchRecord>, String> {
     let mut records = Vec::new();
     let config = crate::ParseConfig::default();
-    let mut read_elapsed = Duration::ZERO;
-    let mut parse_elapsed = Duration::ZERO;
-    let mut project_elapsed = Duration::ZERO;
-    // Bound both file retention and native handoff by the admitted wire limits.
-    for chunk in paths.chunks(crate::org_aot::BATCH_MAX_DOCUMENTS) {
-        let phase_started = Instant::now();
-        let sources =
-            crate::runtime_profile::stage("plan_ledger.source_read", || load_sources(chunk))?;
-        read_elapsed += phase_started.elapsed();
+    for sources in batches {
+        let sources = sources?;
         let mut remaining = sources.as_slice();
         while !remaining.is_empty() {
             let width = bounded_org_batch_len(remaining);
             if width == 0 {
                 let source = &remaining[0];
-                let phase_started = Instant::now();
                 let document = parse_org_aot(&source.source).map_err(|error| {
                     format!("{}: Org AOT parse: {error:?}", source.path.display())
                 })?;
-                parse_elapsed += phase_started.elapsed();
-                let phase_started = Instant::now();
                 if let Some(record) = plan_ledger_record_from_document(
                     &source.path,
                     &source.source,
@@ -227,7 +159,6 @@ fn collect_plan_ledger_files(
                 )? {
                     records.push(record);
                 }
-                project_elapsed += phase_started.elapsed();
                 remaining = &remaining[1..];
                 continue;
             }
@@ -236,11 +167,8 @@ fn collect_plan_ledger_files(
                 .iter()
                 .map(|source| source.source.as_str())
                 .collect::<Vec<_>>();
-            let phase_started = Instant::now();
             let documents = parse_plan_ledger_batch(&inputs, &config)
                 .map_err(|error| format!("Org AOT plan ledger batch: {error:?}"))?;
-            parse_elapsed += phase_started.elapsed();
-            let phase_started = Instant::now();
             for (source, document) in batch.iter().zip(documents) {
                 let document = document.map_err(|error| {
                     format!("{}: Org AOT parse: {error:?}", source.path.display())
@@ -254,15 +182,8 @@ fn collect_plan_ledger_files(
                     records.push(record);
                 }
             }
-            project_elapsed += phase_started.elapsed();
             remaining = rest;
         }
-    }
-    if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER").is_some() {
-        eprintln!(
-            "plan ledger worker phases: files={} read={read_elapsed:?} parse={parse_elapsed:?} project={project_elapsed:?}",
-            paths.len()
-        );
     }
     Ok(records)
 }
@@ -352,3 +273,7 @@ fn project_plan_ledger_record(
     };
     Ok(memory_search_record_matches_options(&record, options).then_some(record))
 }
+
+#[cfg(test)]
+#[path = "../../../tests/unit/plan_ledger_source.rs"]
+mod tests;

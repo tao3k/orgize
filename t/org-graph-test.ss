@@ -4,9 +4,9 @@
 (import (only-in :std/test check check-exception test-case test-suite)
         (only-in :std/list/list every)
         (only-in :clan/poo/object .o)
-        (only-in :gerbil-parser/graph-projection-support
+        (only-in :gerbil-parser/graph-support/projection
                  make-graph-node make-graph-field make-graph-projection graph-projection?)
-        (only-in :gerbil-parser/graph-projection-support
+        (only-in :gerbil-parser/graph-support/projection
                  graph-projection-nodes graph-node-syntax-kind graph-node-label graph-node-fields
                  graph-field-name graph-field-mode)
         (only-in "../languages/org/modules/org-elements/graph-shape.ss" org-graph-shape)

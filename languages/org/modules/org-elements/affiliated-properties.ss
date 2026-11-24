@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Native Scheme affiliated keyword membership.
 
-(import (only-in :gerbil-parser/text-support
+(import (only-in :gerbil-parser/text/strings
                  ascii-ci=? string-before))
 (export org-affiliated-keyword?)
 

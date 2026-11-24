@@ -8,7 +8,7 @@ use orgize::org_aot::{org_graph_spec, org_language_spec};
 #[path = "../languages/org/generated/elements.rs"]
 mod elements;
 
-fn generated_kinds(root: &gerbil_parser_runtime::SyntaxNode) -> BTreeMap<&'static str, usize> {
+fn generated_kinds(root: &orgize::SyntaxNode) -> BTreeMap<&'static str, usize> {
     let mut kinds = BTreeMap::new();
     for node in root.descendants() {
         let kind = org_language_spec().kinds[usize::from(node.kind().0)].name;

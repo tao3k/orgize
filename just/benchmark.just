@@ -89,7 +89,7 @@ runtime-transport-repeat-scale-check receipt: (runtime-profile-receipt-check rec
 
 [private]
 runtime-profile-receipt-check receipt:
-    jq --exit-status 'length > 0 and all(.[]; .schema == "orgize.runtime-parallel.v2" and .profile_enabled and .completed == .documents and .distinct_documents == .documents and .max_in_flight == .callers and .max_active_worker_requests == .domains and .worker_exit_success and (.worker_pids | unique | length) == .domains and (.worker_completed | add) == .completed and (.mode == "performance" and .artifact == null or .mode == "qualification" and (.artifact | type) == "string") and (.stage_timings_ns | has("ffi.transport_inclusive") and has("artifact.syntax_index") and has("graph.project") and has("supervisor.queue")))' "{{ receipt }}"
+    jq --exit-status 'length > 0 and all(.[]; .schema == "orgize.runtime-parallel.v2" and .profile_enabled and .completed == .documents and .distinct_documents == .documents and .max_in_flight == .callers and .max_active_worker_requests == .domains and .worker_exit_success and (.worker_pids | unique | length) == .domains and (.worker_completed | add) == .completed and (.mode == "performance" and .artifact == null or .mode == "qualification" and (.artifact | type) == "string") and (.stage_timings_ns | has("ffi.transport_inclusive") and has("product.decode") and has("supervisor.queue")))' "{{ receipt }}"
 
 [private]
 runtime-profile-scale-check receipt: (runtime-profile-receipt-check receipt)

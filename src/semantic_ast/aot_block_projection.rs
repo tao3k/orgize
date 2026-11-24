@@ -1,6 +1,6 @@
 //! Source-backed block projection from Scheme-owned graph fields.
 
-use gerbil_parser_runtime::TextRange;
+use crate::TextRange;
 
 use super::GraphProjector;
 use crate::ast::aot_block_switches::{

@@ -1,4 +1,4 @@
-use gerbil_parser_runtime::GraphRecord;
+use orgize::GraphRecord;
 
 pub(crate) fn assert_graph_integrity(source: &str, records: &[GraphRecord]) {
     let root = records.first().expect("document graph has a root");

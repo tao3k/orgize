@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 
-use gerbil_parser_runtime::{GraphIndexError, GraphProjectionSpec, GraphRecord, GraphRelation};
+use crate::org_product::{GraphIndexError, GraphProjectionSpec, GraphRecord, GraphRelation};
 
 use crate::{
     org_aot::OrgAotDocument,
@@ -177,8 +177,8 @@ fn select(
             |record| field_matches(document, record, query),
         )
         .map_err(|error| match error {
-            GraphIndexError::InvalidScope => ContractExecutionError::InvalidScope,
-            GraphIndexError::InvalidRecord | GraphIndexError::InvalidTarget => {
+            GraphIndexError::ScopeMissing => ContractExecutionError::InvalidScope,
+            GraphIndexError::RecordCount | GraphIndexError::TargetMissing => {
                 ContractExecutionError::InvalidGraph
             }
         })

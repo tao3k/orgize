@@ -118,10 +118,8 @@ fn document_query_native_parallel_scale_qualification() {
         "fold.batch_vm_gc_cpu_interval_sum",
         "fold.batch_vm_gc_wall_interval_sum",
         "fold.batch_vm_gc_count_interval_sum",
-        "event_tape.encode",
-        "event_tape.decode",
-        "artifact.syntax_index",
-        "graph.project",
+        "product.encode",
+        "product.decode",
     ] {
         assert!(stages.contains_key(name), "missing worker stage {name}");
     }

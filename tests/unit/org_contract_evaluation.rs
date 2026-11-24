@@ -1,3 +1,4 @@
+use crate::TextRange;
 use crate::{
     Org,
     ast::{
@@ -6,7 +7,6 @@ use crate::{
         parse_contracts_from_document,
     },
 };
-use gerbil_parser_runtime::TextRange;
 use std::path::Path;
 
 pub(super) const NATIVE_CASES: &[(&str, fn())] = &[

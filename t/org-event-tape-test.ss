@@ -1,5 +1,10 @@
 (import (only-in :orgize/languages/org/modules/org-parser/clock
                  native-monotonic-ns native-thread-cpu-ns)
+        (only-in :std/vector/u8vector little u8vector-uint-ref u8vector-u16-ref u8vector-u64-ref)
+        (only-in :orgize/languages/org/modules/org-elements/fold-product org-fold-product)
+        (only-in :orgize-fold/graph-configuration
+                 make-org-fold-graph fold-graph-start! fold-graph-token!
+                 fold-graph-finish! fold-graph-publish!)
         (only-in :std/test check test-case test-suite)
         (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-scheme-rust/scheme/actor-batch
@@ -30,12 +35,14 @@
 
 (def (batch-request inputs (operation 6))
   (let* ((payloads (map string->utf8 inputs))
-         (bytes (make-u8vector (+ 16 (foldl (lambda (payload total)
+         (first (if (memv operation '(27 28)) 24 16))
+         (bytes (make-u8vector (+ first (foldl (lambda (payload total)
                                              (+ total 4 (u8vector-length payload)))
                                            0 payloads)) 0)))
     (u8vector-copy! bytes 0 (request "" 15 2 operation))
     (u8vector-set! bytes 14 (length inputs))
-    (let write ((rest payloads) (offset 16))
+    ;; An empty configured TODO profile contains two zero word counts.
+    (let write ((rest payloads) (offset first))
       (unless (null? rest)
         (let* ((payload (car rest)) (size (u8vector-length payload)))
           (for-each (lambda (index)
@@ -56,6 +63,32 @@
              (start (+ offset 5)) (end (+ start size)))
         (loop (+ index 1) end
               (cons (cons (u8vector-ref bytes offset) (subu8vector bytes start end)) rows))))))
+
+(def (event-list-product source config)
+  (let* ((tape (org-events->tape
+                 (parse-org-native-events-with-parameters source (car config) (cdr config))))
+         (header-size (u8vector-length org-event-tape-header))
+         (sink (make-org-fold-graph
+                (string->utf8 source) (utf8->string tape 4 header-size) '())))
+    (let replay ((offset header-size))
+      (if (= offset (u8vector-length tape))
+        (org-fold-product (fold-graph-publish! sink))
+        (case (u8vector-ref tape offset)
+          ((0) (fold-graph-finish! sink) (replay (+ offset 1)))
+          ((1) (fold-graph-start! sink (u8vector-u16-ref tape (+ offset 1) little))
+               (replay (+ offset 3)))
+          ((2) (fold-graph-token! sink (u8vector-u16-ref tape (+ offset 1) little)
+                                  (u8vector-u64-ref tape (+ offset 3) little)
+                                  (u8vector-u64-ref tape (+ offset 11) little))
+               (replay (+ offset 19)))
+          (else (error "invalid expected Org Fold tape")))))))
+
+(def syntax-count-offset (+ (u8vector-length org-event-tape-header) 71))
+(def (product-column bytes offset)
+  (u8vector-uint-ref bytes offset little 4))
+(def (product-elements bytes)
+  (let (start (+ syntax-count-offset 8 (* 20 (product-column bytes syntax-count-offset))))
+    (subu8vector bytes start (u8vector-length bytes))))
 
 (def org-event-tape-test
   (test-suite "Org native event boundary"
@@ -105,9 +138,7 @@
            (for-each
             (lambda (source)
               (check (org-request->tape (request source (car config) (cdr config)))
-                     => (org-events->tape
-                         (parse-org-native-events-with-parameters
-                          source (car config) (cdr config)))))
+                     => (event-list-product source config)))
             sources))
          '((1 . 0) (15 . 1) (15 . 2)))))
     (test-case "bounded batch retains ordered individual grammar tapes"
@@ -117,7 +148,7 @@
         (check (subu8vector tape 0 4) => (u8vector 79 66 84 49))
         (check (map car rows) => '(0 0 0 0))
         (check (map cdr rows) => (map (lambda (source) (org-request->tape (request source 15 2))) inputs))
-        (check (map (lambda (row) (subu8vector (cdr row) 28 (u8vector-length (cdr row))))
+        (check (map (lambda (row) (subu8vector (cdr row) 36 (u8vector-length (cdr row))))
                     (let (profile (org-request->tape (batch-request inputs 7)))
                       (check (subu8vector profile 0 4) => (u8vector 79 66 80 49))
                       (check (subu8vector profile 52 56) => (u8vector 79 66 84 49))
@@ -125,6 +156,10 @@
                => (map cdr rows))))
     (test-case "batch framing admits exact bounds and rejects truncation or overflow"
       (check (length (batch-rows (org-request->tape (batch-request (make-list 64 ""))))) => 64)
+      (let (invalid (batch-request '("valid") 27))
+        (u8vector-set! invalid 16 255)
+        (check (with-catch (lambda (_) 'rejected)
+                           (lambda () (org-request->tape invalid))) => 'rejected))
       (let (valid (batch-request '("α" "")))
         (for-each
          (lambda (end)
@@ -150,33 +185,40 @@
                          (list "valid\n" (make-string (u8vector-length invalid) #\x)
                                "* after\n") operation))
               ;; Mutate only the second payload, preserving its admitted framing.
-              (u8vector-copy! input 30 invalid)
+              (u8vector-copy! input (if (memv operation '(27 28)) 38 30) invalid)
               (let* ((result (org-request->tape input))
                      (rows (batch-rows
                             (if (memv operation '(7 28))
                               (subu8vector result 52 (u8vector-length result))
                               result))))
                 (check (map car rows) => '(0 1 0))
-                (let (payload (cdr (caddr rows)))
-                  (check (if (memv operation '(7 28))
-                           (subu8vector payload 28 (u8vector-length payload)) payload)
-                         => (org-request->tape (request "* after\n" 15 2)))))))
+                (let* ((wire (cdr (caddr rows)))
+                       (payload (if (memv operation '(7 28))
+                                  (subu8vector wire 36 (u8vector-length wire)) wire))
+                       (whole (org-request->tape (request "* after\n" 15 2))))
+                  (if (memv operation '(27 28))
+                    (let* ((expected (product-elements whole))
+                           (elements (product-elements payload))
+                           (end (u8vector-length expected)))
+                      (check (product-column payload syntax-count-offset) => 0)
+                      (check (subu8vector elements 0 end) => expected)
+                      (check (product-column elements end) => 3))
+                    (check payload => whole))))))
           invalid-utf8-inputs))
        '(6 7 27 28)))
     (test-case "empty document retains root and grammar identity"
       (let* ((header-size (u8vector-length org-event-tape-header))
              (tape (org-request->tape (request "" 15 2))))
-        (check (subu8vector tape 0 header-size) => org-event-tape-header)
-        (check (subu8vector tape header-size (u8vector-length tape))
-               => (u8vector 1 0 0 0))))
+        (check (subu8vector tape 0 4) => (u8vector 79 68 86 49))
+        (check (subu8vector tape 4 header-size) => (subu8vector org-event-tape-header 4 header-size))
+        (check (product-column tape syntax-count-offset) => 1)
+        (check (product-column tape (+ syntax-count-offset 4)) => 1)))
     (test-case "combined configuration and multibyte input keep Scheme events"
       (for-each
        (lambda (config)
          (let ((source "* α\r\nx^{β} x^2\n"))
            (check (org-request->tape (request source (car config) (cdr config)))
-                  => (org-events->tape
-                      (parse-org-native-events-with-parameters
-                       source (car config) (cdr config))))))
+                  => (event-list-product source config))))
        '((1 . 0) (15 . 1) (15 . 2))))
     (test-case "native expression requests carry their own grammar identity"
       (let ((tape (org-request->tape (request "(query π \"one\"\"two\") ; note\n" 0 0 1))))
@@ -215,8 +257,8 @@
       (for-each
        (lambda (source)
          (let (profile (org-request->tape (request source 15 2 5)))
-           (check (subu8vector profile 0 4) => (u8vector 79 80 82 49))
-           (check (subu8vector profile 28 (u8vector-length profile))
+           (check (subu8vector profile 0 4) => (u8vector 79 80 82 50))
+           (check (subu8vector profile 36 (u8vector-length profile))
                   => (org-request->tape (request source 15 2)))))
        '("" "* α\r\nx^{β} x^2\n" "#+begin_src rust\nlet x = 1;\n#+end_src\n"))
       (check (with-catch (lambda (exception) 'rejected)

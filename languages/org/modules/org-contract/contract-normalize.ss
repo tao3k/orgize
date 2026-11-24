@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 ;;; Private positional compiler state, not a public authoring DSL.
-(import (only-in :gerbil-parser/artifact-support
+(import (only-in :gerbil-parser/execution/artifact
                  event-kind token-event-token-kind token-event-lexeme))
 (export contract-events->rows)
 

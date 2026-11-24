@@ -5,9 +5,7 @@ mod transport;
 pub(crate) use batch::{
     MAX_DOCUMENTS as BATCH_MAX_DOCUMENTS, MAX_SOURCE_BYTES as BATCH_MAX_SOURCE_BYTES,
 };
-#[cfg(test)]
-pub(super) use transport::parse_expression_events;
 pub(super) use transport::{
-    evaluate_contract, expand_macro_fields, initialize_owner, parse_events, parse_events_batch,
+    evaluate_contract, expand_macro_fields, initialize_owner, parse_document, parse_documents,
     parse_expression_values, semantic_fields,
 };

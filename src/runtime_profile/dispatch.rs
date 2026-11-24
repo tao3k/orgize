@@ -13,10 +13,11 @@ pub(crate) fn is_active() -> bool {
 
 #[cfg(feature = "runtime-profile")]
 pub(crate) fn native_tape(bytes: &[u8]) -> Result<&[u8], String> {
-    let (fold, tape, cpu, payload) = super::wire::decode(bytes)?;
+    let ([fold, tape, cpu, encode_cpu], payload) = super::wire::decode(bytes)?;
     super::collector::record("fold.service", fold);
-    super::collector::record("event_tape.encode", tape);
+    super::collector::record("product.encode", tape);
     super::collector::record("fold.thread_cpu", cpu);
+    super::collector::record("product.encode_thread_cpu", encode_cpu);
     Ok(payload)
 }
 
@@ -38,7 +39,7 @@ pub(crate) fn stage<T>(name: &'static str, work: impl FnOnce() -> T) -> T {
 pub(crate) fn operation<T>(operation: u8, work: impl FnOnce() -> T) -> T {
     #[cfg(feature = "runtime-profile")]
     {
-        const NAMES: [&str; 27] = [
+        const NAMES: &[&str] = &[
             "ffi.operation.00",
             "ffi.operation.01",
             "ffi.operation.02",
@@ -64,8 +65,6 @@ pub(crate) fn operation<T>(operation: u8, work: impl FnOnce() -> T) -> T {
             "ffi.operation.22",
             "ffi.operation.23",
             "ffi.operation.24",
-            "ffi.operation.25",
-            "ffi.operation.26",
         ];
         stage(NAMES[usize::from(operation)], work)
     }

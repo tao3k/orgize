@@ -2,8 +2,8 @@
 ;;; Inert POO values for the Org contract feature.
 
 (import (only-in :clan/poo/object .o .ref)
-        (only-in :clan/poo/mop validate)
-        (only-in :tao3k/yuanxu/object-family/interface defpoo-object-family)
+        (only-in :clan/poo/type validate)
+        (only-in :tao3k/yuanxu/object/interface defpoo-object-family)
         (only-in "value-types.ss"
                  +org-contract-schema+
                  +org-contract-expectation-kind+

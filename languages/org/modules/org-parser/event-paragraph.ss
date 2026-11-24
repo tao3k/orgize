@@ -38,10 +38,10 @@
 (def paragraph-event-helpers
   (list (make-org-event-helper
          'inline-span (cons '(ledger-source-spans 0) event-inline-initial)
-         ;; Ledger projects structural ownership and original source spans.
-         ;; Inline children never affect line dispatch or these fields.
+         ;; Ledger only needs the lossless body span. OrgTextLine has no
+         ;; Element projection and carries no inline children in this profile.
          `((if (uint-positive? (state ledger-source-spans))
-               ((start-node OrgTextLine) (token TextLine start end) (finish-node))
+               ((token TextLine start end))
                ,(event-text-line-forms 'start)))
          '(inline-script-policy ledger-source-spans))
         (make-org-event-helper

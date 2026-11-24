@@ -11,10 +11,5 @@ pub(super) fn parse_query_expression_values(value: &str) -> Option<Vec<QueryExpr
 }
 
 #[cfg(test)]
-pub(super) fn parse_query_expression_syntax(value: &str) -> Option<gerbil_parser_runtime::Parse> {
-    crate::org_aot::parse_native_expression(value, &grammar::LANGUAGE).ok()
-}
-
-#[cfg(test)]
 #[path = "../../../tests/unit/org_contract_cst.rs"]
 pub(crate) mod tests;

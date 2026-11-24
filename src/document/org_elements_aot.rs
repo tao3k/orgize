@@ -4,8 +4,8 @@ use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::path::Path;
 
-use gerbil_parser_runtime::GraphRecord;
-use gerbil_parser_runtime::TextRange;
+use crate::GraphRecord;
+use crate::TextRange;
 
 use crate::org_aot::{OrgAotDocument, org_image_link, org_language_spec, parse_org_aot};
 

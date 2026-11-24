@@ -1,15 +1,8 @@
 #!/usr/bin/env gxi
 ;;; -*- Gerbil -*-
-;;; Developer-only AOT projection; Cargo consumes the committed Rust module.
-
-(import (only-in :gerbil-parser/rust-runtime-support
-                 generate-language-rust-runtime-module)
+(import (only-in "../org-parser/catalog-generator.ss" generate-language-catalog)
         (only-in "grammar.ss" org-contract-language-grammar))
+(export main)
 
-(def arguments (command-line))
-(unless (> (length arguments) 2)
-  (error "usage: generate-parser.ss OUTPUT.rs"))
-
-(generate-language-rust-runtime-module
- (car (reverse arguments))
- org-contract-language-grammar)
+(def (main output-path)
+  (generate-language-catalog output-path org-contract-language-grammar))

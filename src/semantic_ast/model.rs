@@ -1,6 +1,6 @@
 //! Semantic AST data model.
 
-use gerbil_parser_runtime::TextRange;
+use crate::TextRange;
 
 use super::attachment_model::{AttachmentDirectory, AttachmentLink, AttachmentState};
 use super::block_model::{
